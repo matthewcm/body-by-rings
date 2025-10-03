@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { Link, Stack } from 'expo-router';
-// --- MOCK DATA FOR PREVIEW ---
-// In your local app, you'd use the real Convex import: import { useQuery } from "convex/react";
+
 import { api } from "../../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { SafeAreaView } from 'react-native-safe-area-context';
-// --- END MOCK DATA ---
+import { PhaseSelector } from '@/features/phase-selector/phase-selector';
 
 
 const THEME = {
@@ -19,30 +18,17 @@ const THEME = {
 };
 
 
-const PhaseSelector = ({ selectedPhase, setSelectedPhase, phases }) => (
-    <View style={styles.phaseSelectorContainer}>
-        {phases.map(phase => (
-            <TouchableOpacity
-                key={phase}
-                style={[styles.phaseButton, selectedPhase === phase && styles.phaseButtonSelected]}
-                onPress={() => setSelectedPhase(phase)}
-            >
-                <Text style={[styles.phaseButtonText, selectedPhase === phase && styles.phaseButtonTextSelected]}>
-                    Phase {phase}
-                </Text>
-            </TouchableOpacity>
-        ))}
-    </View>
-);
 
 export default function DashboardScreen() {
     const templates = useQuery(api.workouts.getAllWorkoutTemplates);
     const [selectedPhase, setSelectedPhase] = useState(1);
 
+    const phases = useQuery(api.phases.getPhases);
+
     const availablePhases = useMemo(() => {
-        if (!templates) return [1];
-        return [...new Set(templates.map(t => t.phase))].sort((a, b) => a - b);
-    }, [templates]);
+        if (!phases) return [1];
+        return [...new Set(phases.map(t => t.phase))].sort((a, b) => a - b);
+    }, [phases]);
 
     const uniqueDays = useMemo(() => {
         if (!templates) return [];
@@ -78,9 +64,17 @@ export default function DashboardScreen() {
                 {uniqueDays.map(day => (
                     <Link key={day} href={{ pathname: `/workout/${selectedPhase}/${day}` }} asChild>
                         <TouchableOpacity style={styles.card}>
-                            <Text style={styles.cardText}>Day {day}</Text>
+                            <Text style={styles.cardText}>Day {`${day} : ${
+                                phases?.find(t => t.phase === selectedPhase && t.day === day)?.type
+              }`}
+              </Text>
                             <Text style={styles.cardSubText}>
-                                {templates.find(t => t.phase === selectedPhase && t.day === day)?.exerciseName}...
+                                {phases?.find(t => t.phase === selectedPhase && t.day === day)?.title}
+                            </Text>
+
+                            <Text style={styles.cardSubText}>
+                Tap to start your session
+
                             </Text>
                         </TouchableOpacity>
                     </Link>
@@ -96,7 +90,7 @@ const styles = StyleSheet.create({
     header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
     subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 20, marginTop: 10 },
     card: { backgroundColor: THEME.card, borderRadius: 12, padding: 20, marginBottom: 16 },
-    cardText: { color: THEME.text, fontSize: 18, fontWeight: 'bold' },
+    cardText: { color: THEME.primary, fontSize: 18, fontWeight: 'bold' },
     cardSubText: { color: THEME.placeholder, fontSize: 14, marginTop: 4 },
     phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
     phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },

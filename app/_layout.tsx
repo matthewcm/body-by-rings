@@ -14,7 +14,6 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-// Replace this with your project's deployment URL from the Convex dashboard
 const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL || '';
 
 
@@ -31,7 +30,6 @@ export default function RootLayout() {
   return (
     <ConvexProvider client={convex}>
       <SafeAreaProvider>
-
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

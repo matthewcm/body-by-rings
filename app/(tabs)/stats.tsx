@@ -6,45 +6,11 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const THEME = {
-  background: '#121212',
-  card: '#1E1E1E',
-  text: '#E0E0E0',
-  primary: '#BB86FC',
-  placeholder: '#6E6E6E',
-  activityIndicator: '#BB86FC',
-};
+import { ProgressionTable } from '@/features/progression-table/progression-table';
+import { THEME } from '@/theme/colours';
 
 
-const ProgressionTable = ({ data }) => {
-  if (!data || data.length === 0) {
-    return <Text style={styles.tablePlaceholder}>No logs found for this exercise in this phase.</Text>;
-  }
 
-  return (
-    <View style={styles.tableContainer}>
-      {/* Header */}
-      <View style={[styles.tableRow, styles.tableHeader]}>
-        <Text style={[styles.tableCell, styles.headerText, { flex: 2 }]}>Date</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Sets</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Max Reps</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Max Intensity</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Volume</Text>
-      </View>
-      {/* Rows */}
-      {data.map((row, index) => (
-        <View key={index} style={styles.tableRow}>
-          <Text style={[styles.tableCell, { flex: 2 }]}>{row.date}</Text>
-          <Text style={styles.tableCell}>{row.sets}</Text>
-          <Text style={styles.tableCell}>{row.maxReps}</Text>
-          <Text style={styles.tableCell}>{row.maxIntensity}</Text>
-          <Text style={styles.tableCell}>{row.totalVolume}</Text>
-        </View>
-      ))}
-    </View>
-  );
-};
 
 export default function StatsScreen() {
   const logs = useQuery(api.workouts.getWorkoutLogs);

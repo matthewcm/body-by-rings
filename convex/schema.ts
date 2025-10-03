@@ -37,6 +37,13 @@ export default defineSchema({
       })
     ),
   }),
+
+  phaseTemplates: defineTable({
+    day: v.float64(),
+    phase: v.float64(),
+    title: v.string(),
+    type: v.optional(v.string()),
+  }),
 });
 
 
