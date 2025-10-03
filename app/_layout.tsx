@@ -1,0 +1,45 @@
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import 'react-native-reanimated';
+
+
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
+// Replace this with your project's deployment URL from the Convex dashboard
+const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL || '';
+
+
+const convex = new ConvexReactClient(CONVEX_URL, {
+  // We're not using authentication in this example.
+  // We'll rely on the default anonymous authentication.
+  unsavedChangesWarning: false,
+});
+
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
+  return (
+    <ConvexProvider client={convex}>
+      <SafeAreaProvider>
+
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+      </SafeAreaProvider>
+    </ConvexProvider>
+  );
+}
