@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
@@ -116,14 +116,17 @@ const ExerciseCard = ({ exercise, onUpdate, performanceData }) => {
 
 export default function WorkoutScreen() {
   const router = useRouter();
-  const { day } = useLocalSearchParams();
+  const { day, phase } = useLocalSearchParams();
   const workoutDay = parseInt(day, 10);
 
   const [performanceLog, setPerformanceLog] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const templates = useQuery(api.workouts.getWorkoutTemplates);
+  const templates = useQuery(api.workouts.getWorkoutTemplatesForPhase, {
+    phase: Number.parseInt(phase as string)
+  });
+
   const logWorkout = useMutation(api.workouts.logWorkout);
 
   const exercisesForDay = useMemo(() => {

@@ -36,7 +36,7 @@ const PhaseSelector = ({ selectedPhase, setSelectedPhase, phases }) => (
 );
 
 export default function DashboardScreen() {
-    const templates = useQuery(api.workouts.getWorkoutTemplates);
+    const templates = useQuery(api.workouts.getAllWorkoutTemplates);
     const [selectedPhase, setSelectedPhase] = useState(1);
 
     const availablePhases = useMemo(() => {

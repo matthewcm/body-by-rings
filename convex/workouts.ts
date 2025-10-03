@@ -11,10 +11,20 @@ import { v } from "convex/values";
  * Fetches all workout templates from the database.
  * Your app calls this to know what exercises to display.
  */
-export const getWorkoutTemplates = query({
+export const getAllWorkoutTemplates = query({
   handler: async (ctx) => {
     // This line tells the database to get everything from the "workoutTemplates" table.
-    return await ctx.db.query("workoutTemplates").collect();
+    return ((await ctx.db.query("workoutTemplates").collect()))
+  },
+});
+
+export const getWorkoutTemplatesForPhase = query({
+  handler: async (ctx, args: {
+    phase: number
+  }) => {
+    return (await ctx.db.query("workoutTemplates")
+      .filter(q =>q.eq(q.field('phase'), args.phase))
+      .collect())
   },
 });
 
