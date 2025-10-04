@@ -61,10 +61,10 @@ export const ExerciseCard = ({ exercise, onUpdate, performanceData }) => {
                 <FontAwesome5 name={getExerciseIcon(exercise.exerciseName)} size={18} color={THEME.primary} style={{width: 25}}/>
                 <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
             </View>
-            {prevSummary && (
+            {Boolean(prevSummary) && (
                 <View style={styles.prevSummaryContainer}>
-                    <Text style={styles.prevSummaryText}>{prevSummary.summary}</Text>
-                    {prevSummary.notes && <Text style={styles.prevNotesText}>Notes: {prevSummary.notes}</Text>}
+                    <Text style={styles.prevSummaryText}>{prevSummary?.summary}</Text>
+                    {Boolean(prevSummary?.notes) && <Text style={styles.prevNotesText}>Notes: {prevSummary?.notes}</Text>}
                 </View>
             )}
 
@@ -115,13 +115,6 @@ export const ExerciseCard = ({ exercise, onUpdate, performanceData }) => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: THEME.background },
-    finishButton: { backgroundColor: THEME.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
-    finishButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    statsBar: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderBottomWidth: 1, borderColor: THEME.border },
-    statItem: { alignItems: 'center' },
-    statLabel: { color: THEME.placeholder, fontSize: 12, textTransform: 'uppercase' },
-    statValue: { color: THEME.text, fontSize: 18, fontWeight: '600' },
     card: { backgroundColor: THEME.card, borderRadius: 12, margin: 16, marginBottom: 0, padding: 16 },
     exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
     exerciseTitle: { fontSize: 20, fontWeight: 'bold', color: THEME.text, marginLeft: 12 },
@@ -139,19 +132,6 @@ const styles = StyleSheet.create({
     addSetButtonText: { color: THEME.primary, fontSize: 16, fontWeight: 'bold' },
     notesInput: { backgroundColor: THEME.background, color: THEME.text, borderRadius: 8, padding: 10, fontSize: 14, marginTop: 16, height: 60, textAlignVertical: 'top' },
     removeSetIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-    // Modal Styles
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' },
-    modalContent: { width: '90%', maxHeight: '70%', backgroundColor: THEME.card, borderRadius: 20, padding: 20 },
-    modalTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-    summaryItem: { backgroundColor: THEME.background, borderRadius: 8, padding: 12, marginBottom: 8 },
-    summaryItemName: { color: THEME.text, fontSize: 16, fontWeight: 'bold' },
-    summaryItemText: { color: THEME.subtleText, fontSize: 14, marginTop: 4 },
-    modalButtonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, gap: 10 },
-    modalButton: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-    cancelButton: { backgroundColor: THEME.border },
-    cancelButtonText: { color: THEME.text, fontWeight: 'bold' },
-    confirmButton: { backgroundColor: THEME.success },
-    confirmButtonText: { color: '#fff', fontWeight: 'bold' },
 
     prevSummaryContainer: { backgroundColor: THEME.background, borderRadius: 8, padding: 10, marginBottom: 12 },
     prevSummaryText: { color: THEME.subtleText, fontSize: 13, fontStyle: 'italic' },
