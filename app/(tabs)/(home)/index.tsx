@@ -1,102 +1,61 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
-import { Link, Stack } from 'expo-router';
-
-import { api } from "../../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { authStyles } from '@/app/(auth)/auth-styles';
+import { SignOutButton } from '@/components/sign-out-button';
+import Dashboard from '@/features/dashboard/dashboard';
+import { THEME } from '@/theme/colours';
+import { useUser, SignedIn, SignedOut } from '@clerk/clerk-expo';
+import { Link } from 'expo-router';
+import React from 'react';
+import { Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PhaseSelector } from '@/features/phase-selector/phase-selector';
-
-
-const THEME = {
-  background: '#121212',
-  card: '#1E1E1E',
-  text: '#E0E0E0',
-  primary: '#BB86FC',
-  placeholder: '#6E6E6E',
-  activityIndicator: '#BB86FC',
-};
 
 
 
-export default function DashboardScreen() {
-    const templates = useQuery(api.workouts.getAllWorkoutTemplates);
-    const [selectedPhase, setSelectedPhase] = useState(1);
 
-    const phases = useQuery(api.phases.getPhases);
 
-    const availablePhases = useMemo(() => {
-        if (!phases) return [1];
-        return [...new Set(phases.map(t => t.phase))].sort((a, b) => a - b);
-    }, [phases]);
 
-    const uniqueDays = useMemo(() => {
-        if (!templates) return [];
-        return [...new Set(
-            templates
-                .filter(t => t.phase === selectedPhase)
-                .map(t => t.day)
-        )].sort((a, b) => a - b);
-    }, [templates, selectedPhase]);
+export default function AuthPage() {
+  const { user } = useUser();
 
-    if (templates === undefined) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={THEME.activityIndicator} />
-            </View>
-        );
-    }
-    
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <Stack.Screen options={{ title: 'Workout Dashboard' }} />
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.header}>Body By Rings</Text>
-                
-                <PhaseSelector 
-                    selectedPhase={selectedPhase} 
-                    setSelectedPhase={setSelectedPhase}
-                    phases={availablePhases}
-                />
+  // When a user is signed in, we can just show the main dashboard
+  if (user) {
+    return <Dashboard/>;
+  }
 
-                <Text style={styles.subHeader}>Workouts for Phase {selectedPhase}</Text>
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }}>
+      <View style={authStyles.container}>
+        <SignedIn>
+          {/* This view is typically handled by redirecting, but for completeness: */}
+          <Text style={authStyles.title}>Welcome, {user?.firstName}</Text>
+          <SignOutButton />
+        </SignedIn>
 
-                {uniqueDays.map(day => (
-                    <Link key={day} href={{ pathname: `/workout/${selectedPhase}/${day}` }} asChild>
-                        <TouchableOpacity style={styles.card}>
-                            <Text style={styles.cardText}>Day {`${day} : ${
-                                phases?.find(t => t.phase === selectedPhase && t.day === day)?.type
-              }`}
-              </Text>
-                            <Text style={styles.cardSubText}>
-                                {phases?.find(t => t.phase === selectedPhase && t.day === day)?.title}
-                            </Text>
+        <SignedOut>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={authStyles.title}>Body By Rings</Text>
+            <Text style={authStyles.subtitle}>Your ultimate workout companion. Sign in or create an account to get started.</Text>
+          </View>
 
-                            <Text style={styles.cardSubText}>
-                Tap to start your session
+          <View style={{ marginTop: 40 }}>
+            {/* Sign In Button */}
+            <Link href="/(auth)/sign-in" asChild>
+              <TouchableOpacity style={authStyles.button}>
+                <Text style={authStyles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
+            </Link>
 
-                            </Text>
-                        </TouchableOpacity>
-                    </Link>
-                ))}
-            </ScrollView>
-        </SafeAreaView>
-    );
+            {/* Sign Up Button */}
+            <Link href="/(auth)/sign-up" asChild>
+              {/* Using ssoButton style for a secondary look */}
+              <TouchableOpacity style={authStyles.ssoButton}>
+                <Text style={authStyles.ssoButtonText}>Create Account</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </SignedOut>
+      </View>
+    </SafeAreaView>
+  );
 }
-
-const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: THEME.background },
-    container: { padding: 16 },
-    header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-    subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 20, marginTop: 10 },
-    card: { backgroundColor: THEME.card, borderRadius: 12, padding: 20, marginBottom: 16 },
-    cardText: { color: THEME.primary, fontSize: 18, fontWeight: 'bold' },
-    cardSubText: { color: THEME.placeholder, fontSize: 14, marginTop: 4 },
-    phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
-    phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-    phaseButtonSelected: { backgroundColor: THEME.primary },
-    phaseButtonText: { color: THEME.placeholder, fontWeight: 'bold', fontSize: 16 },
-    phaseButtonTextSelected: { color: THEME.background },
-});
 
 

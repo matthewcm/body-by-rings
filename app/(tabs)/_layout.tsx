@@ -31,13 +31,16 @@ export default function TabLayout() {
         options={{
           title: 'Dashboard',
           href: '/',
+          headerShown: false,
           tabBarIcon: ({ color }) => <FontAwesome5 name="home" size={24} color={color} />,
+
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
           title: 'Progression',
+          headerShown: false,
           tabBarIcon: ({ color }) => <FontAwesome5 name="chart-line" size={24} color={color} />,
         }}
       />

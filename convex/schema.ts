@@ -21,6 +21,7 @@ export default defineSchema({
 
   // Table to store your actual, completed workout logs
   workoutLogs: defineTable({
+    userId: v.string(),
     date: v.string(), // ISO 8601 string for consistency
     day: v.number(),
     phase: v.number(),
@@ -36,7 +37,11 @@ export default defineSchema({
         ),
       })
     ),
-  }),
+  })
+    .index("by_user", ["userId"]) // Allows Convex to quickly find all logs for a specific user
+    .index("by_user_phase_day", ["userId", "phase", "day"]),
+
+
 
   phaseTemplates: defineTable({
     day: v.float64(),
