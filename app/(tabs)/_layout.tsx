@@ -1,14 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { THEME } from '@/theme/colours';
 
-const THEME = {
-  background: '#121212',
-  card: '#1E1E1E',
-  text: '#E0E0E0',
-  primary: '#BB86FC',
-  placeholder: '#6E6E6E',
-};
 
 export default function TabLayout() {
   return (
@@ -42,6 +36,22 @@ export default function TabLayout() {
           title: 'Progression',
           headerShown: false,
           tabBarIcon: ({ color }) => <FontAwesome5 name="chart-line" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="plan"
+        options={{
+          title: 'Plan',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="flag" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile-screen"
+        options={{
+          title: 'User',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="user" size={24} color={color} />,
         }}
       />
     </Tabs>

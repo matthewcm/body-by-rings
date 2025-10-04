@@ -10,16 +10,9 @@ import { PhaseSelector } from '@/features/phase-selector/phase-selector';
 import { authStyles } from '@/app/(auth)/auth-styles';
 import { SignOutButton } from '@/components/sign-out-button';
 import { SignedIn, useUser } from '@clerk/clerk-expo';
+import { THEME } from '@/theme/colours';
 
 
-const THEME = {
-  background: '#121212',
-  card: '#1E1E1E',
-  text: '#E0E0E0',
-  primary: '#BB86FC',
-  placeholder: '#6E6E6E',
-  activityIndicator: '#BB86FC',
-};
 
 
 
@@ -58,8 +51,8 @@ export default function Dashboard() {
             <Stack.Screen options={{ title: 'Workout Dashboard' }} />
             <ScrollView contentContainerStyle={styles.container}>
         <SignedIn>
-          <View style={{flexDirection:'row' ,alignItems:'center', alignContent:'center', justifyContent:'space-between'}}>
-          <Text style={authStyles.subtitle}>Welcome {user?.primaryEmailAddress?.emailAddress}</Text>
+          <View style={{flexDirection:'row' ,alignItems:'center', alignContent:'center',  justifyContent:'space-between'}}>
+          <Text style={authStyles.subtitle}>Welcome {user?.firstName || user?.primaryEmailAddress?.emailAddress}</Text>
           <SignOutButton />
           </View>
         </SignedIn>
