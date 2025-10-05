@@ -1,36 +1,34 @@
-// This object maps exercise names to an array of muscle group keys.
-// These keys correspond to the IDs in the MuscleMapSVG component.
-export const muscleMapping = {
-  // Chest, Shoulders, Triceps
-  'Ring Dip': ['chest', 'shoulders', 'triceps'],
-  'Archer Pushup': ['chest', 'shoulders', 'triceps'],
-  'Chest Fly': ['chest'],
-  'Handstand Pushup': ['shoulders', 'triceps'],
-  'Shoulder Pushup': ['shoulders', 'triceps'],
-  'Bulgarian Pushup': ['chest', 'shoulders', 'triceps'],
-  'Diamond Pushup': ['triceps', 'chest'],
-  'Tricep Dip': ['triceps'],
-  'Tricep Extension': ['triceps'],
-  'Shoulder Shrug': ['traps'],
-  'Shoulder Tap': ['core', 'shoulders'],
-  'Waist Tap': ['core', 'shoulders'],
+export const exerciseMuscleMap = [
+  // Pushing Exercises
+  { exercise: 'Ring Dip', muscles: ['chest', 'deltoids', 'triceps'] },
+  { exercise: 'Archer Pushup', muscles: ['chest', 'deltoids', 'triceps', 'obliques'] },
+  { exercise: 'Chest Fly', muscles: ['chest'] },
+  { exercise: 'Handstand Pushup', muscles: ['deltoids', 'triceps', 'upper-back'] },
+  { exercise: 'Shoulder Pushup', muscles: ['deltoids', 'triceps'] },
+  { exercise: 'Bulgarian Pushup', muscles: ['chest', 'deltoids', 'triceps'] },
+  { exercise: 'Diamond Pushup', muscles: ['triceps', 'chest'] },
+  { exercise: 'Tricep Dip', muscles: ['triceps'] },
+  { exercise: 'Tricep Extension', muscles: ['triceps'] },
+  { exercise: 'Shoulder Shrug', muscles: ['trapezius'] },
+  { exercise: 'Shoulder Tap', muscles: ['abs', 'obliques', 'deltoids'] },
+  { exercise: 'Waist Tap', muscles: ['abs', 'obliques', 'deltoids'] },
 
-  // Back, Biceps, Core
-  'Chinup': ['lats', 'biceps'],
-  'Mantle Chinup': ['lats', 'biceps'],
-  'Archer Chinup': ['lats', 'biceps'],
-  'Wide Pullup': ['lats', 'back_upper'],
-  'Bodyweight Row': ['lats', 'back_upper', 'biceps'],
-  'Archer Bodyweight Row': ['lats', 'back_upper', 'biceps'],
-  'L-Row': ['lats', 'back_upper', 'biceps'],
-  'Single Arm Row': ['lats', 'back_upper'],
-  'Pelican Curl': ['biceps', 'shoulders'],
-  'Pelican Curl Negative': ['biceps', 'shoulders'],
-  'Bodyweight Bicep Curl': ['biceps'],
-  'Face Pull': ['back_upper', 'shoulders_rear'],
-  'Rear Delt Fly': ['shoulders_rear', 'back_upper'],
-  'Ring Rollout': ['core', 'lats'],
-  'Two Arm Hang': ['forearms', 'lats'],
-  'One Arm Hang': ['forearms', 'lats'],
-};
+  // Pulling Exercises
+  { exercise: 'Chinup', muscles: ['upper-back', 'biceps'] },
+  { exercise: 'Mantle Chinup', muscles: ['upper-back', 'biceps', 'obliques'] },
+  { exercise: 'Archer Chinup', muscles: ['upper-back', 'biceps', 'obliques'] },
+  { exercise: 'Wide Pullup', muscles: ['upper-back'] },
+  { exercise: 'Bodyweight Row', muscles: ['upper-back', 'biceps'] },
+  { exercise: 'Archer Bodyweight Row', muscles: ['upper-back', 'biceps', 'obliques'] },
+  { exercise: 'L-Row', muscles: ['upper-back', 'biceps', 'abs'] },
+  { exercise: 'Single Arm Row', muscles: ['upper-back', 'obliques'] },
+  { exercise: 'Pelican Curl', muscles: ['biceps', 'deltoids', 'chest'] },
+  { exercise: 'Pelican Curl Negative', muscles: ['biceps', 'deltoids', 'chest'] },
+  { exercise: 'Bodyweight Bicep Curl', muscles: ['biceps'] },
+  { exercise: 'Face Pull', muscles: ['upper-back', 'deltoids'] },
+  { exercise: 'Rear Delt Fly', muscles: ['deltoids', 'upper-back'] },
+  { exercise: 'Ring Rollout', muscles: ['abs', 'upper-back'] },
+  { exercise: 'Two Arm Hang', muscles: ['forearm', 'upper-back'] },
+  { exercise: 'One Arm Hang', muscles: ['forearm', 'upper-back', 'obliques'] },
+];
 

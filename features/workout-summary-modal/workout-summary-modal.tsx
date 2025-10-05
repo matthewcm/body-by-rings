@@ -2,7 +2,6 @@ import { THEME } from "@/theme/colours"
 import { Modal, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Text } from "react-native"
 import { MuscleMap } from "../muscle-map/muscle-map"
 
-const MOCK_MUSCLES = ['chest', 'shoulders', 'triceps'];
 
 export const WorkoutSummaryModal = (
   {
@@ -27,7 +26,12 @@ export const WorkoutSummaryModal = (
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Workout Summary</Text>
           <ScrollView style={{ width: '100%' }}>
-            <MuscleMap highlightedMuscles={MOCK_MUSCLES} />
+            <MuscleMap performedExercises={workoutSummary
+              .map(s => s.name)
+              .filter(value => {
+                return value !== undefined && value !== null;
+              })
+            } />
 
             {workoutSummary.map(item => (
               <View key={item.name} style={styles.summaryItem}>
@@ -53,7 +57,7 @@ export const WorkoutSummaryModal = (
 const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' },
-  modalContent: { width: '90%', maxHeight: '70%', backgroundColor: THEME.card, borderRadius: 20, padding: 20 },
+  modalContent: { width: '90%', maxHeight: '90%', backgroundColor: THEME.card, borderRadius: 20, padding: 20 },
   modalTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
   summaryItem: { backgroundColor: THEME.background, borderRadius: 8, padding: 12, marginBottom: 8 },
   summaryItemName: { color: THEME.text, fontSize: 16, fontWeight: 'bold' },

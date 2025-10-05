@@ -8,4 +8,5 @@ export const THEME = {
   border: '#333333',
   placeholder: '#8E8E93',
   subtleText: '#A0A0A0',
+  activityIndicator: '#BB86FC',
 };
