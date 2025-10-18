@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-nativ
 import { FontAwesome5 } from '@expo/vector-icons';
 import { THEME } from '@/theme/colours';
 import { useCountdown } from '@/features/countdown/hooks/use-countdown';
+import { parse } from 'expo-linking';
 
 
 // --- Helper to get an icon based on exercise name ---
@@ -48,9 +49,10 @@ export const ExerciseCard = ({ exercise, onUpdate, performanceData }) => {
         const setsCount = lastPerformance.sets.length;
         const totalReps = lastPerformance.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
         const setIntensity = lastPerformance.sets.find((s) => s.intensity).intensity;
+        const totalVolume = lastPerformance.sets.reduce((sum,s) => sum + parseInt(s.reps), 0 )
         const avgReps = (totalReps / setsCount).toFixed(1);
         return {
-            summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}`,
+            summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${totalVolume}`,
             notes: lastPerformance.notes
         };
     }, [lastPerformance]);
