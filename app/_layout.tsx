@@ -20,6 +20,7 @@ export const unstable_settings = {
 };
 
 const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL || '';
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_EY|| '';
 
 
 const convex = new ConvexReactClient(CONVEX_URL, {
@@ -33,7 +34,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ClerkProvider tokenCache={tokenCache}>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={CLERK_PUBLISHABLE_KEY}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <SafeAreaProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
