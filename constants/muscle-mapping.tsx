@@ -8,7 +8,7 @@ export const exerciseMuscleMap = [
   { exercise: 'Bulgarian Pushup', muscles: ['chest', 'deltoids', 'triceps'] },
   { exercise: 'Diamond Pushup', muscles: ['triceps', 'chest'] },
   { exercise: 'Tricep Dip', muscles: ['triceps'] },
-  { exercise: 'Tricep Extension', muscles: ['triceps'] },
+  { exercise: 'Tricep Extension', muscles: ['triceps', 'abs'] },
   { exercise: 'Shoulder Shrug', muscles: ['trapezius'] },
   { exercise: 'Shoulder Tap', muscles: ['abs', 'obliques', 'deltoids'] },
   { exercise: 'Waist Tap', muscles: ['abs', 'obliques', 'deltoids'] },
