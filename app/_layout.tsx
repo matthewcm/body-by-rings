@@ -20,7 +20,7 @@ export const unstable_settings = {
 };
 
 const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL || '';
-const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_EY|| '';
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY|| '';
 
 
 const convex = new ConvexReactClient(CONVEX_URL, {

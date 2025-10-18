@@ -66,10 +66,11 @@ export default function WorkoutScreen() {
       if (!p.sets || p.sets.length === 0) return null;
       const setsCount = p.sets.length;
       const avgReps = (p.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0) / setsCount).toFixed(1);
+      const volumeReps = p.sets.reduce((sum, s) => sum + parseInt(s.reps), 0);
       const setIntensity = p.sets.find((s) => s.intensity)?.intensity;
       return {
         name: p.exerciseName,
-        summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}`
+        summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${volumeReps}`,
       };
 
     })
