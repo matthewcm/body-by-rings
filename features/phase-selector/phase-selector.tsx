@@ -1,7 +1,11 @@
 import { THEME } from "@/theme/colours";
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-export const PhaseSelector = ({ selectedPhase, setSelectedPhase, phases }) => (
+export const PhaseSelector = ({ selectedPhase, setSelectedPhase, phases }: {
+  selectedPhase: number;
+  setSelectedPhase: (phase: number) => void;
+  phases: number[];
+}) => (
     <View style={styles.phaseSelectorContainer}>
         {phases.map(phase => (
             <TouchableOpacity

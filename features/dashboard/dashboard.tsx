@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { Link, Stack } from 'expo-router';
@@ -11,8 +10,6 @@ import { authStyles } from '@/app/(auth)/auth-styles';
 import { SignOutButton } from '@/components/sign-out-button';
 import { SignedIn, useUser } from '@clerk/clerk-expo';
 import { THEME } from '@/theme/colours';
-
-
 
 
 

@@ -9,26 +9,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ExerciseCard } from '@/features/exercise-card/exercise-card';
 import { WorkoutSummaryModal } from '@/features/workout-summary-modal/workout-summary-modal';
 import { isNotNull } from '@/utils/array';
+import { PerformanceLog, PerformanceLogs } from '@/modals/exercise';
+import { Id } from '@/convex/_generated/dataModel';
 
 
-type PerformanceLog = {
-  exerciseName?: string;
-  sets?: {
-    reps: string;
-    intensity: string;
-    completed?: boolean
-  }[];
-  notes?: string;
-  lastPerformance?: PerformanceLog;
-}
 
-type PerformanceLogs = {
-  [id: string]: PerformanceLog
-}
 
 export default function WorkoutScreen() {
   const router = useRouter();
-  const { phase, day } = useLocalSearchParams();
+  const { phase, day } = useLocalSearchParams<{
+    phase: string,
+    day: string
+  }>();
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
@@ -59,7 +51,7 @@ export default function WorkoutScreen() {
     }
   }, [exercisesForDay, lastWorkout]);
 
-  const handleUpdateExercise = (exerciseId, data) => setPerformanceLog(prev => ({ ...prev, [exerciseId]: data }));
+  const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => setPerformanceLog(prev => ({ ...prev, [exerciseId]: data }));
 
   const handleFinishPress = () => {
     const summary = Object.values(performanceLog).map(p => {
@@ -89,9 +81,9 @@ export default function WorkoutScreen() {
       performance: Object.values(performanceLog)
         .map(p => ({
           exerciseName: p.exerciseName,
-          notes: p.notes,
+          notes: p.notes || '',
           sets: p.sets
-            .filter(s => s.reps && s.reps.trim() !== '')
+            .filter((s) => s.reps && s.reps.trim() !== '')
             .map(s => ({
               reps: s.reps.trim(), intensity: s.intensity.trim()
             }))
@@ -103,7 +95,8 @@ export default function WorkoutScreen() {
       setIsSummaryVisible(false);
       router.replace('/');
     } catch (error) {
-      Alert.alert("Error", "Could not save workout.");
+      Alert.alert("Error", "Could not save workout.",);
+      console.error("Error saving workout:", error);
     } finally {
       setIsSaving(false);
     }

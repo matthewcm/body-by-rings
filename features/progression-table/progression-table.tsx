@@ -1,7 +1,15 @@
 import { THEME } from '@/theme/colours';
 import { View, Text, StyleSheet } from 'react-native';
 
-export const ProgressionTable = ({ data }) => {
+export const ProgressionTable = ({ data }: {
+  data: {
+    date: string;
+    sets: number;
+    maxReps: string;
+    maxIntensity: string;
+    totalVolume: string;
+  }[]
+}) => {
   if (!data || data.length === 0) {
     return <Text style={styles.tablePlaceholder}>No logs found for this exercise in this phase.</Text>;
   }

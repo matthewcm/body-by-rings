@@ -8,9 +8,10 @@ import { generateHexShades } from '@/utils/colors';
 
 
 
-export const MuscleMap = ({ performedExercises }: {
-  performedExercises: string[];
-}) => {
+export const MuscleMap = (
+  { performedExercises }: {
+    performedExercises: string[];
+  }) => {
   const colorPalette = generateHexShades(THEME.error, 6, 20);
   const bodyMap = performedExercises
     .map(performedExercise => {
@@ -24,7 +25,7 @@ export const MuscleMap = ({ performedExercises }: {
     })
     .flat()
 
-  const muscleCounts = bodyMap.reduce((accumulator : Record<string, number>, muscleSlug) => {
+  const muscleCounts = bodyMap.reduce((accumulator: Record<string, number>, muscleSlug) => {
     accumulator[muscleSlug.slug] = (accumulator[muscleSlug.slug] || 0) + 1;
     return accumulator;
   }, {});
@@ -33,8 +34,6 @@ export const MuscleMap = ({ performedExercises }: {
     slug: slug,
     intensity: muscleCounts[slug],
   }));
-
-  console.log('bodyMapWithIntensity', bodyMapWithIntensity)
 
 
   return (

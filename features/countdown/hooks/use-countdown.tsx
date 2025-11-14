@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 
-// --- Custom Hook for a Countdown Timer ---
-export const useCountdown = (initialSeconds, onEnd) => {
+export const useCountdown = (initialSeconds: number, onEnd: () => void) => {
     const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
     const [isActive, setIsActive] = useState(false);
 
