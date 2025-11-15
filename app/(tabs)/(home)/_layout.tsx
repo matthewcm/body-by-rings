@@ -1,5 +1,10 @@
 import { Stack } from 'expo-router';
 
+export const unstable_settings = {
+  // Ensure any route can link back to `/`
+  initialRouteName: 'index',
+};
+
 export default function HomeLayout() {
   return (
     <Stack
@@ -13,8 +18,7 @@ export default function HomeLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{headerShown: false}} />
-       {/* Hide the workout entry screen from the tab bar */}
-      <Stack.Screen name="workout/[day]" options={{ href: null }} />
+      <Stack.Screen name="custom-workout"  />
     </Stack>
   );
 }

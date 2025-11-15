@@ -18,6 +18,17 @@ export const getAllWorkoutTemplates = query({
   },
 });
 
+/**
+ * Fetches all custom workout templates from the database.
+ * Your app calls this to know what exercises to display.
+ */
+export const getAllCustomWorkoutTemplates = query({
+  handler: async (ctx) => {
+    // This line tells the database to get everything from the "workoutTemplates" table.
+    return ((await ctx.db.query("customWorkoutTemplates").collect()))
+  },
+});
+
 export const getWorkoutTemplatesForPhase = query({
   handler: async (ctx, args: {
     phase: number
@@ -88,6 +99,53 @@ export const logWorkout = mutation({
       performance: args.performance,
     });
     return logId;
+  },
+});
+
+/**
+ * Saves a new workout exercise to the workout templates
+ */
+export const createCustomWorkout = mutation({
+  // 'args' defines the data structure this function expects to receive from your app.
+  args: {
+    phase: v.number(),
+    day: v.number(),
+    letter: v.string(),
+    exerciseName: v.string(),
+    targetIntensity: v.string(),
+    targetSets: v.number(),
+    targetReps: v.string(), // Kept as string to accommodate ranges like "8-10"
+    tempo: v.string(),
+    rest: v.string(),
+  },
+  // 'handler' contains the logic that runs on the server.
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("You must be logged in to log a workout.");
+    }
+
+    const exerciseExists = await ctx.db.query("customWorkoutTemplates").filter(q => q.eq(q.field('exerciseName'), args.exerciseName)).collect()
+
+    if (exerciseExists.length === 0) {
+      const createdExercise = await ctx.db.insert("customWorkoutTemplates", {
+        userId: identity.subject, // `identity.subject` is the user's unique ID
+        phase: 0,
+        day: 0,
+        letter: '',
+        exerciseName: args.exerciseName,
+        targetIntensity: args.targetIntensity,
+        targetSets: args.targetSets,
+        targetReps: args.targetReps,
+        tempo: args.tempo,
+        rest: args.rest
+      });
+      return createdExercise;
+    }
+
+    return exerciseExists[0]
+
+
   },
 });
 

@@ -19,6 +19,19 @@ export default defineSchema({
     rest: v.string(),
   }).index("by_day", ["day"]), // An index makes querying by day faster
 
+  customWorkoutTemplates: defineTable({
+    phase: v.number(),
+    day: v.number(),
+    letter: v.string(),
+    exerciseName: v.string(),
+    targetIntensity: v.string(),
+    targetSets: v.number(),
+    targetReps: v.string(), // Kept as string to accommodate ranges like "8-10"
+    tempo: v.string(),
+    rest: v.string(),
+    userId: v.string(),
+  }).index("by_day", ["day"]), // An index makes querying by day faster
+
   // Table to store your actual, completed workout logs
   workoutLogs: defineTable({
     userId: v.string(),
