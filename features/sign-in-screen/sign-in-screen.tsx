@@ -1,4 +1,4 @@
-import { authStyles } from '@/app/(auth)/auth-styles';
+import { authStyles } from '@/features/sign-in-screen/styles/auth-styles';
 import { SignOutButton } from '@/shared/components/sign-out-button';
 import { THEME } from '@/shared/theme/colours';
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';

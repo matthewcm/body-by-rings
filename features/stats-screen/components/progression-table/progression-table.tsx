@@ -2,12 +2,12 @@ import { THEME } from '@/shared/theme/colours';
 import { View, Text, StyleSheet } from 'react-native';
 
 export const ProgressionTable = ({ data }: {
-  data: {
+  data?: {
     date: string;
     sets: number;
-    maxReps: string;
-    maxIntensity: string;
-    totalVolume: string;
+    maxReps: number;
+    maxIntensity?: string;
+    totalVolume?: number;
   }[]
 }) => {
   if (!data || data.length === 0) {

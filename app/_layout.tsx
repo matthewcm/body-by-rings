@@ -5,7 +5,6 @@ import 'react-native-reanimated';
 import { tokenCache } from '@clerk/clerk-expo/token-cache'
 
 
-
 import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-expo"
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";

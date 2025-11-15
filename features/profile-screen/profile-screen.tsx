@@ -1,18 +1,11 @@
 import { THEME } from '@/shared/theme/colours';
 import { useUser, useClerk } from '@clerk/clerk-expo';
-import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DeviceInfo from 'react-native-device-info';
+import { ProfileRow } from './components/profile-row';
 
-const ProfileRow = ({ icon, label, value }) => (
-    <View style={styles.row}>
-        <FontAwesome5 name={icon} size={16} color={THEME.subtleText} style={styles.icon} />
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>{value}</Text>
-    </View>
-);
 
 export default function ProfileScreen() {
     const { isLoaded, isSignedIn, user } = useUser();
@@ -61,8 +54,6 @@ export default function ProfileScreen() {
         );
     };
 
-  console.log(DeviceInfo)
-  console.log(DeviceInfo.getVersion())
 
     const appVersion = DeviceInfo.getVersion() || '1.0.0';
     const accountCreated = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
@@ -95,7 +86,7 @@ export default function ProfileScreen() {
 
                 <View style={styles.card}>
                      <Text style={styles.cardTitle}>Account Information</Text>
-                     <ProfileRow icon="envelope" label="Email" value={user.primaryEmailAddress.toString()} />
+                     <ProfileRow icon="envelope" label="Email" value={user.primaryEmailAddress?.toString() || ''} />
                      <ProfileRow icon="calendar-alt" label="Account Created" value={accountCreated} />
                      <ProfileRow icon="info-circle" label="App Version" value={appVersion} />
                 </View>

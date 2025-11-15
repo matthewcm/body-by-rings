@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Text, TextInput, TouchableOpacity, View, Alert } from 'react-native'
 import { useSignUp } from '@clerk/clerk-expo'
 import { Link, useRouter } from 'expo-router'
-import { authStyles } from './auth-styles' // Assuming styles are in a shared file
+import { authStyles } from '../styles/auth-styles' // Assuming styles are in a shared file
 
 export default function SignUpScreen() {
   const { isLoaded, signUp, setActive } = useSignUp()

@@ -2,7 +2,7 @@ import { useSignIn } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
 import { Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import React from 'react';
-import { authStyles } from './auth-styles'; // Assuming styles are in the same directory
+import { authStyles } from '../styles/auth-styles'; // Assuming styles are in the same directory
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn();

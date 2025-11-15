@@ -6,7 +6,7 @@
       "@/*": [
         "./*"
       ],
-      "@components/*": ["shared/components/*"],
+      "@components/*": ["./shared/components/*"],
     }
   },
   "include": [
