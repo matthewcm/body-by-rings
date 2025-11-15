@@ -44,7 +44,8 @@ export default function WorkoutScreen() {
           exerciseName: ex.exerciseName,
           sets: lastPerf?.sets.map(s => ({ ...s, completed: false })) || Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
           notes: '',
-          lastPerformance: lastPerf,
+          exerciseId: ex._id,
+          lastPerformance: lastPerf ? {...lastPerf, exerciseId: ex._id} : undefined,
         };
       });
       setPerformanceLog(initialLog);

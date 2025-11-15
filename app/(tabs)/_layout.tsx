@@ -39,6 +39,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="diary"
+        options={{
+          title: 'Diary',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="book" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="plan"
         options={{
           title: 'Plan',
