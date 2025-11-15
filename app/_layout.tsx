@@ -40,7 +40,7 @@ const RootLayout = () => {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!(!!user)}>
-          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(auth)" options={{headerShown: false}} />
         </Stack.Protected>
       </Stack>
       <StatusBar style="auto" />

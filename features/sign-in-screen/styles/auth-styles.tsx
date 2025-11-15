@@ -8,6 +8,8 @@ export const authStyles = StyleSheet.create({
     backgroundColor: THEME.background,
     justifyContent: 'center',
     padding: 24,
+    flexDirection: 'column',
+    gap: '1rem',
   },
   // Large title for the screen (e.g., "Create Account")
   title: {

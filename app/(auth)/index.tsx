@@ -1,5 +1,4 @@
+import OnboardScreen from "@/features/sign-in-screen/onboard-screen";
 
-import SignInScreen from '@/features/sign-in-screen/sign-in-screen';
+export default OnboardScreen
 
-
-export default SignInScreen

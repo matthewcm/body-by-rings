@@ -8,7 +8,7 @@ import { Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-export default function SignInScreen() {
+export default function OnboardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: THEME.background }}>
       <View style={authStyles.container}>

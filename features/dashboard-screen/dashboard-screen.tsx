@@ -80,6 +80,20 @@ export default function Dashboard() {
             </TouchableOpacity>
           </Link>
         ))}
+
+          <Link href={{ pathname: `/custom-workout` }} asChild>
+            <TouchableOpacity style={styles.card}>
+              <Text style={styles.cardText}>Custom Workout
+              </Text>
+              <Text style={styles.cardSubText}>
+                Create your own workout session
+              </Text>
+
+              <Text style={styles.cardSubText}>
+                Tap to start your session
+              </Text>
+            </TouchableOpacity>
+          </Link>
       </ScrollView>
     </SafeAreaView>
   );

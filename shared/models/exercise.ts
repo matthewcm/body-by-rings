@@ -9,6 +9,7 @@ export interface ExercisePerformance {
 }
 
 export type PerformanceLog = {
+  exerciseId: string;
   exerciseName: string;
   sets: {
     reps: string;

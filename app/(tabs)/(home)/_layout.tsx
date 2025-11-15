@@ -18,6 +18,7 @@ export default function HomeLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{headerShown: false}} />
+      <Stack.Screen name="custom-workout"  />
     </Stack>
   );
 }

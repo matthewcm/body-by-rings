@@ -4,7 +4,7 @@ import { Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import React from 'react';
 import { authStyles } from '../styles/auth-styles'; // Assuming styles are in the same directory
 
-export default function Page() {
+export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
   const router = useRouter();
 
