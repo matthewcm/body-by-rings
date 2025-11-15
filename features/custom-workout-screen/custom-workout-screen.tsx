@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo } from 'react';
-import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Button } from 'react-native';
+import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
