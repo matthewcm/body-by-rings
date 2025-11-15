@@ -1,4 +1,4 @@
 
-import WorkoutScreen from '@/screens/workout-screen';
+import WorkoutScreen from '@/features/workout-screen/workout-screen';
 
 export default WorkoutScreen

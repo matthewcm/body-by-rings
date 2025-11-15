@@ -2,9 +2,9 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
 import Body, { ExtendedBodyPart } from "react-native-body-highlighter";
-import { exerciseMuscleMap } from '@/constants/muscle-mapping';
-import { THEME } from '@/theme/colours';
-import { generateHexShades } from '@/utils/colors';
+import { exerciseMuscleMap } from '@/shared/constants/muscle-mapping';
+import { THEME } from '@/shared/theme/colours';
+import { generateHexShades } from '@/shared/utils/colors';
 
 
 

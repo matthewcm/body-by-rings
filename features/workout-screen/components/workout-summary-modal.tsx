@@ -1,6 +1,6 @@
-import { THEME } from "@/theme/colours"
+import { THEME } from "@/shared/theme/colours"
 import { Modal, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Text } from "react-native"
-import { MuscleMap } from "../muscle-map/muscle-map"
+import { MuscleMap } from "../../muscle-map/muscle-map"
 
 
 export const WorkoutSummaryModal = (

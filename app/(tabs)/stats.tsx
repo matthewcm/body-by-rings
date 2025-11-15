@@ -7,7 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProgressionTable } from '@/features/progression-table/progression-table';
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 
 
 

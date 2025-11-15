@@ -26,7 +26,7 @@ export default function Page() {
       // and redirect the user
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace('/');
+        router.navigate('(home)');
       } else {
         // If the status isn't complete, check why. User might need to
         // complete further steps.
@@ -36,8 +36,9 @@ export default function Page() {
     } catch (err) {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
+      const error = err as { errors?: { message: string }[] };
       console.error(JSON.stringify(err, null, 2));
-      Alert.alert("Sign In Error", err.errors?.[0]?.message || "An error occurred during sign-in.");
+      Alert.alert("Sign In Error", error.errors?.[0]?.message || "An error occurred during sign-in.");
     }
   };
 
@@ -73,7 +74,7 @@ export default function Page() {
       </TouchableOpacity>
       
       <View style={authStyles.footer}>
-        <Text style={authStyles.footerText}>Don't have an account?</Text>
+        <Text style={authStyles.footerText}>{`Don't have an account?`}</Text>
         <Link href="/sign-up" asChild>
           <Text style={authStyles.footerLink}>Sign up</Text>
         </Link>

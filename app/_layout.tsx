@@ -6,13 +6,13 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache'
 
 
 
-import { ClerkProvider, useAuth } from "@clerk/clerk-expo"
+import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-expo"
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import React from 'react';
+import { useColorScheme } from '@/shared/hooks/use-color-scheme';
+import React  from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export const unstable_settings = {
@@ -20,7 +20,7 @@ export const unstable_settings = {
 };
 
 const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL || '';
-const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY|| '';
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
 
 const convex = new ConvexReactClient(CONVEX_URL, {
@@ -30,22 +30,38 @@ const convex = new ConvexReactClient(CONVEX_URL, {
 });
 
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+const RootLayout = () => {
 
+  const { user } = useUser();
+
+  return (
+    <>
+      <Stack>
+        <Stack.Protected guard={!!user}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!(!!user)}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
+      <StatusBar style="auto" />
+    </>
+  );
+}
+
+const RootLayoutWithProviders = () => {
+  const colorScheme = useColorScheme();
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={CLERK_PUBLISHABLE_KEY}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <SafeAreaProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            </Stack>
-            <StatusBar style="auto" />
+            <RootLayout />
           </ThemeProvider>
         </SafeAreaProvider>
       </ConvexProviderWithClerk>
     </ClerkProvider>
-  );
+  )
 }
+
+export default RootLayoutWithProviders

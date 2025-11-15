@@ -1,4 +1,4 @@
-import { THEME } from "@/theme/colours";
+import { THEME } from "@/shared/theme/colours";
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 export const PhaseSelector = ({ selectedPhase, setSelectedPhase, phases }: {

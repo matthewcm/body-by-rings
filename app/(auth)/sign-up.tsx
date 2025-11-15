@@ -34,7 +34,9 @@ export default function SignUpScreen() {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
       console.error(JSON.stringify(err, null, 2))
-      Alert.alert("Sign Up Error", err.errors?.[0]?.message || "An error occurred during sign-up.");
+
+      const error = err as { errors?: { message: string }[] }
+      Alert.alert("Sign Up Error", error.errors?.[0]?.message || "An error occurred during sign-up.");
     }
   }
 
@@ -52,7 +54,7 @@ export default function SignUpScreen() {
       // and redirect the user
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId })
-        router.replace('/')
+        router.navigate({pathname: '(home)'});
       } else {
         // If the status is not complete, check why. User may need to
         // complete further steps.
@@ -63,7 +65,8 @@ export default function SignUpScreen() {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
       console.error(JSON.stringify(err, null, 2))
-      Alert.alert("Verification Error", err.errors?.[0]?.message || "An error occurred during verification.");
+      const error = err as { errors?: { message: string }[] }
+      Alert.alert("Verification Error", error.errors?.[0]?.message || "An error occurred during verification.");
     }
   }
 

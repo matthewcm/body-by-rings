@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PlanCard = ({ title, description, isActive }) => (

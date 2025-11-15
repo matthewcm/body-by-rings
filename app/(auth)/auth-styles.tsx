@@ -1,4 +1,4 @@
-import { THEME } from "@/theme/colours";
+import { THEME } from "@/shared/theme/colours";
 import { StyleSheet } from "react-native";
 
 export const authStyles = StyleSheet.create({

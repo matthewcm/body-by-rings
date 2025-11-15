@@ -1,13 +1,14 @@
 import { useClerk } from '@clerk/clerk-expo'
-import * as Linking from 'expo-linking'
 import { Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import React from 'react';
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
+import { useRouter } from 'expo-router';
 
 
 export const SignOutButton = () => {
   // Use `useClerk()` to access the `signOut()` function
   const { signOut } = useClerk()
+  const router = useRouter();
   
   const handleSignOut = async () => {
     try {
@@ -15,7 +16,7 @@ export const SignOutButton = () => {
       // Redirect to your desired page after sign-out
       // Note: In Expo Router, you might prefer using router.replace('/')
       // instead of Linking for in-app navigation.
-      Linking.openURL(Linking.createURL('/'))
+      router.navigate({pathname: '(home)'});
     } catch (err) {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling

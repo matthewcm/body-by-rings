@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 import { useCountdown } from '@/features/countdown/hooks/use-countdown';
-import { PerformanceLog } from '@/modals/exercise';
+import { PerformanceLog } from '@/shared/models/exercise';
 import { Id } from '@/convex/_generated/dataModel';
 
 

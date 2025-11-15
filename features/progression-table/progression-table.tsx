@@ -1,4 +1,4 @@
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 import { View, Text, StyleSheet } from 'react-native';
 
 export const ProgressionTable = ({ data }: {

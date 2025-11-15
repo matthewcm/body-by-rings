@@ -4,12 +4,12 @@ import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Aler
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ExerciseCard } from '@/features/exercise-card/exercise-card';
-import { WorkoutSummaryModal } from '@/features/workout-summary-modal/workout-summary-modal';
-import { isNotNull } from '@/utils/array';
-import { PerformanceLog, PerformanceLogs } from '@/modals/exercise';
+import { ExerciseCard } from '@/features/workout-screen/components/exercise-card';
+import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
+import { isNotNull } from '@/shared/utils/array';
+import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { Id } from '@/convex/_generated/dataModel';
 
 
@@ -93,7 +93,7 @@ export default function WorkoutScreen() {
     try {
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
-      router.replace('/');
+      router.navigate({pathname: '(home)'});
     } catch (error) {
       Alert.alert("Error", "Could not save workout.",);
       console.error("Error saving workout:", error);

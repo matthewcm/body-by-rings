@@ -8,5 +8,18 @@ export default function AuthRoutesLayout() {
     return <Redirect href={'/'} />
   }
 
-  return <Stack />
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#000000',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}>
+      <Stack.Screen name="index" options={{headerShown: false}} />
+    </Stack>
+  );
 }

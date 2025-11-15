@@ -1,4 +1,4 @@
-import { THEME } from '@/theme/colours';
+import { THEME } from '@/shared/theme/colours';
 import { useUser, useClerk } from '@clerk/clerk-expo';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useState } from 'react';
