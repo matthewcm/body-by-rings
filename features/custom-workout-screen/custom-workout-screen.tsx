@@ -28,6 +28,7 @@ export default function CustomWorkoutScreen() {
 
   const [templates, setTemplates] = useState<{_id: Id<'workoutTemplates'>, exerciseName: string}[]>([])
   const logWorkout = useMutation(api.workouts.logWorkout);
+  const createCustomExercise = useMutation(api.workouts.createCustomWorkout);
 
   const exercisesForDay = useMemo(() => {
     if (!templates) return [];
@@ -94,6 +95,19 @@ export default function CustomWorkoutScreen() {
         .filter(p => p.sets.length > 0)
     };
     try {
+      exercisesForDay.forEach(async (ex) => {
+        await createCustomExercise({
+          exerciseName: ex.exerciseName,
+          phase: 0,
+          day: 0,
+          targetReps: '8',
+          targetSets: 3,
+          targetIntensity: 'Medium',
+          letter: '',
+          tempo: '2-0-2',
+          rest: '60s',
+        })
+      })
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
       router.navigate({pathname: '(home)'});
@@ -122,6 +136,7 @@ export default function CustomWorkoutScreen() {
         workoutSummary={workoutSummary}
         onClose={() => setIsSummaryVisible(false)}
         isSaving={isSaving}
+        withMuscleMap={false}
       />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
@@ -137,8 +152,7 @@ export default function CustomWorkoutScreen() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <Button onPress={handleCreateNewExercise} title='Create new exercise' />
-
+        <TouchableOpacity style={styles.createNewExerciseButton} onPress={handleCreateNewExercise}> <Text style={styles.finishButtonText}>Create new exercise</Text></TouchableOpacity>)
       </ScrollView>
 
 
@@ -148,8 +162,9 @@ export default function CustomWorkoutScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.background },
+  createNewExerciseButton: { backgroundColor: THEME.primary,  textAlign:'center', width:'auto', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginRight: 20 },
   finishButton: { backgroundColor: THEME.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginRight: 20 },
-  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
   statsBar: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderBottomWidth: 1, borderColor: THEME.border },
   statItem: { alignItems: 'center' },
   statLabel: { color: THEME.placeholder, fontSize: 12, textTransform: 'uppercase' },

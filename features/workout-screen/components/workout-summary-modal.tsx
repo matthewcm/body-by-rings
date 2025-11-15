@@ -9,15 +9,16 @@ export const WorkoutSummaryModal = (
     workoutSummary,
     isSaving,
     onClose,
-    onConfirm
+    onConfirm,
+    withMuscleMap=true
 
   }: {
     isVisible: boolean,
     onClose: () => void
     onConfirm: () => void
     workoutSummary: {summary?: string, name?: string}[],
-    isSaving: boolean
-
+    isSaving: boolean,
+    withMuscleMap?: boolean
   }
 ) => {
   return (
@@ -26,12 +27,14 @@ export const WorkoutSummaryModal = (
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Workout Summary</Text>
           <ScrollView style={{ width: '100%' }}>
+            {withMuscleMap !== false && ( 
             <MuscleMap performedExercises={workoutSummary
               .map(s => s.name)
               .filter(value => {
                 return value !== undefined && value !== null;
               })
             } />
+            )}
 
             {workoutSummary.map(item => (
               <View key={item.name} style={styles.summaryItem}>

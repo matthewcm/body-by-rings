@@ -13,6 +13,7 @@ import { THEME } from '@/shared/theme/colours';
 export default function StatsScreen() {
   const logs = useQuery(api.workouts.getWorkoutLogs);
   const templates = useQuery(api.workouts.getAllWorkoutTemplates);
+  const customTemplates = useQuery(api.workouts.getAllCustomWorkoutTemplates);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
 
 
@@ -21,13 +22,20 @@ export default function StatsScreen() {
     return [...new Set(templates.map(t => t.exerciseName))];
   }, [templates]);
 
+  const uniqueCustomExercises = useMemo(() => {
+    if (!customTemplates) return [];
+    return [...new Set(customTemplates.map(t => t.exerciseName))];
+  }, [customTemplates]);
+
   useEffect(() => {
     if (uniqueExercises.length > 0 && !uniqueExercises.includes(selectedExercise)) {
-      setSelectedExercise(uniqueExercises[0]);
+      if (uniqueCustomExercises.length > 0 && !uniqueCustomExercises.includes(selectedExercise)) {
+        setSelectedExercise(uniqueExercises[0]);
+      }
     } else if (uniqueExercises.length === 0) {
       setSelectedExercise('');
     }
-  }, [uniqueExercises, selectedExercise]);
+  }, [uniqueExercises, uniqueCustomExercises, selectedExercise]);
 
   const tableData = useMemo(() => {
     if (!logs || !selectedExercise) return [];
@@ -71,6 +79,19 @@ export default function StatsScreen() {
         <Text style={styles.subHeader}>Select an Exercise</Text>
         <View style={styles.chipContainer}>
           {uniqueExercises.map(ex => (
+            <TouchableOpacity
+              key={ex}
+              style={[styles.chip, selectedExercise === ex && styles.chipSelected]}
+              onPress={() => setSelectedExercise(ex)}
+            >
+              <Text style={[styles.chipText, selectedExercise === ex && styles.chipTextSelected]}>{ex}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.subHeader}>Custom Exercises</Text>
+        <View style={styles.chipContainer}>
+          {uniqueCustomExercises.map(ex => (
             <TouchableOpacity
               key={ex}
               style={[styles.chip, selectedExercise === ex && styles.chipSelected]}
