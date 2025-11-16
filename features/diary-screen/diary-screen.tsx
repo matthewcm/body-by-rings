@@ -20,26 +20,25 @@ export default function DiaryScreen() {
   const recentWorkouts = useMemo(() => {
     if (!workoutLogs) return {};
     const sortedLogs = workoutLogs
-
-      .map(log => {
-
-        const lastPerformance = log.performance[log.performance.length - 1];
-
-        if (!lastPerformance || lastPerformance.sets.length === 0) return null;
-        const setsCount = lastPerformance.sets.length;
-        const totalReps = lastPerformance.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
-        const setIntensity = lastPerformance.sets.find((s) => s.intensity)?.intensity;
-        const totalVolume = lastPerformance.sets.reduce((sum, s) => sum + parseInt(s.reps), 0)
-        const avgReps = (totalReps / setsCount).toFixed(1);
-        return {
-          date: new Date(log.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' }),
-          summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${totalVolume}`,
-          title: lastPerformance.exerciseName,
-          notes: lastPerformance.notes,
-          rawDate: new Date(log.date),
-          workoutId: log._id,
-        };
+      .map(workoutSession => {
+        return workoutSession.performance.map(lastPerformance => {
+          if (!lastPerformance || lastPerformance.sets.length === 0) return null;
+          const setsCount = lastPerformance.sets.length;
+          const totalReps = lastPerformance.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
+          const setIntensity = lastPerformance.sets.find((s) => s.intensity)?.intensity;
+          const totalVolume = lastPerformance.sets.reduce((sum, s) => sum + parseInt(s.reps), 0)
+          const avgReps = (totalReps / setsCount).toFixed(1);
+          return {
+            date: new Date(workoutSession.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' }),
+            summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${totalVolume}`,
+            title: lastPerformance.exerciseName,
+            notes: lastPerformance.notes,
+            rawDate: new Date(workoutSession.date),
+            workoutId: workoutSession._id,
+          };
+        })
       })
+      .flat()
       .filter(a => a !== null)
       .sort((a, b) => (b?.rawDate.getTime() || 0) - (a?.rawDate.getTime() || 0)); // Sort by most recent first
 
