@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { THEME } from '@/shared/theme/colours';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +37,7 @@ export default function CustomWorkoutScreen() {
   const createCustomExercise = useMutation(api.workouts.createCustomWorkout);
 
   const exercisesForDay = useMemo(() => templates || [], [templates]);
+  const scanImage = useAction(api.ai.scanWorkoutImage);
 
   // --- AI SCAN LOGIC ---
   const handleScanWOD = async () => {
@@ -58,8 +59,7 @@ export default function CustomWorkoutScreen() {
 
     setIsScanning(true);
     try {
-      const base64Image = result.assets[0].base64
-      const parsedData = await scanWODWithAI(base64Image)
+      const parsedData = await scanImage({ base64Image: result.assets[0].base64 });
       setWodBlocks(parsedData); // Store the WOD grouping logic
 
       // Also populate the actual loggable templates for each exercise found in the WODs
