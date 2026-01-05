@@ -12,14 +12,12 @@ import { Id } from '@/convex/_generated/dataModel';
 import { NewExerciseCard } from './components/new-exercise-card';
 import { v4 as uuidv4 } from 'uuid';
 import * as ImagePicker from 'expo-image-picker';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { WodCard } from '../workout-screen/components/wod-card';
-import { scanWODWithAI } from '../ai-scanner/services/ai-scanner';
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY || "");
+const GALLERY = 'gallery'
+const CAMERA = 'camera'
 
-
+type SCAN_TYPE = 'gallery' | 'camera'
 
 export default function CustomWorkoutScreen() {
   const router = useRouter();
@@ -39,23 +37,42 @@ export default function CustomWorkoutScreen() {
   const exercisesForDay = useMemo(() => templates || [], [templates]);
   const scanImage = useAction(api.ai.scanWorkoutImage);
 
-  // --- AI SCAN LOGIC ---
-  const handleScanWOD = async () => {
-    // 1. Request Permissions
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert("Permission Denied", "We need camera access to scan the WOD board.");
-      return;
+
+  const handleGetWodImage = async (type: SCAN_TYPE) => {
+    if (type === GALLERY) {
+      // 1. Request Permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "We need access to gallery.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, base64: true, quality: 0.6 });
+      if (result.canceled || !result.assets[0].base64) return;
+
+      return result
     }
+    if (type === CAMERA) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "We need camera access to scan the WOD board.");
+        return;
+      }
 
-    // 2. Take Photo
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      base64: true,
-      quality: 0.7,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        base64: true,
+        quality: 0.7,
+      });
+      return result
+    }
+  }
 
-    if (result.canceled || !result.assets[0].base64) return;
+  // --- AI SCAN LOGIC ---
+  const handleScanWOD = async (type: SCAN_TYPE) => {
+
+    const result = await handleGetWodImage(type)
+    if (!result || result.canceled || !result.assets[0].base64) return;
 
     setIsScanning(true);
     try {
@@ -176,18 +193,33 @@ export default function CustomWorkoutScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
         {/* AI Scanner Button */}
-        <View style={styles.scannerContainer}>
-          <TouchableOpacity
-            style={[styles.scanButton, isScanning && { opacity: 0.7 }]}
-            onPress={handleScanWOD}
-            disabled={isScanning}
-          >
-            {isScanning ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.finishButtonText}>📸 Scan WOD Board</Text>
-            )}
-          </TouchableOpacity>
+        <View style={styles.scanRow}>
+          <View style={styles.scannerContainer}>
+            <TouchableOpacity
+              style={[styles.scanButton, isScanning && { opacity: 0.7 }]}
+              onPress={() => handleScanWOD(CAMERA)}
+              disabled={isScanning}
+            >
+              {isScanning ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.finishButtonText}>📸 Scan WOD Board</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          <View style={styles.scannerContainer}>
+            <TouchableOpacity
+              style={[styles.scanButton, isScanning && { opacity: 0.7 }]}
+              onPress={() => handleScanWOD(GALLERY)}
+              disabled={isScanning}
+            >
+              {isScanning ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.finishButtonText}>📸 WOD from gallery</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 1. Show the CrossFit "Summary" Cards first */}
@@ -227,9 +259,12 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: THEME.background },
   scannerContainer: { padding: 20, borderBottomWidth: 1, borderBottomColor: THEME.border },
   sectionHeader: { textAlign: 'center', margin: 16, color: THEME.text, fontSize: 18, fontWeight: '800', textTransform: 'uppercase' },
+  scanRow: { flexDirection: 'row', gap: '5', width: '100%', flex: 1, justifyContent: 'center' },
   scanButton: {
+    flex: 1,
     backgroundColor: THEME.secondary,
     paddingVertical: 12,
+    paddingHorizontal: 6,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
