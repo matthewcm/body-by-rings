@@ -9,12 +9,15 @@ interface CalendarWidgetProps {
   onWeekChange: (date: Date) => void;
 }
 
+type ViewMode = 'week' | 'month';
+
 export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
   selectedDate,
   onDateChange,
   activeDates,
   onWeekChange,
 }) => {
+  const [viewMode, setViewMode] = React.useState<ViewMode>('month');
   const [currentMonth, setCurrentMonth] = React.useState(() => {
     const date = new Date(selectedDate);
     return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -64,7 +67,24 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     return weeks;
   };
 
+  // Get the week (Monday to Sunday) for the selected date
+  const getWeekDates = (date: Date): Date[] => {
+    const dateCopy = new Date(date);
+    const day = dateCopy.getDay();
+    const diff = dateCopy.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const monday = new Date(dateCopy);
+    monday.setDate(diff);
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      week.push(d);
+    }
+    return week;
+  };
+
   const monthWeeks = getMonthWeeks(currentMonth);
+  const weekDates = getWeekDates(selectedDate);
 
   // Get week number (ISO week number)
   const getWeekNumber = (date: Date): number => {
@@ -104,6 +124,25 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     onWeekChange(new Date(newMonth));
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(selectedDate.getDate() + (direction === 'next' ? 7 : -7));
+    onDateChange(newDate);
+    onWeekChange(newDate);
+  };
+
+  const getWeekRange = (): string => {
+    const start = weekDates[0];
+    const end = weekDates[6];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    if (start.getMonth() === end.getMonth()) {
+      return `${monthNames[start.getMonth()]} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
+    } else {
+      return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}, ${start.getFullYear()}`;
+    }
+  };
+
   const goToToday = () => {
     const today = new Date();
     setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -114,8 +153,82 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-  return (
-    <View style={styles.container}>
+  const renderWeekView = () => (
+    <>
+      {/* Week Navigation */}
+      <View style={styles.weekNavigation}>
+        <TouchableOpacity onPress={() => navigateWeek('prev')} style={styles.navButton}>
+          <Text style={styles.navButtonText}>&lt;</Text>
+        </TouchableOpacity>
+        <Text style={styles.weekRange}>{getWeekRange()}</Text>
+        <TouchableOpacity onPress={() => navigateWeek('next')} style={styles.navButton}>
+          <Text style={styles.navButtonText}>&gt;</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Week Calendar */}
+      <View style={styles.calendar}>
+        <View style={styles.dayNamesRowWeek}>
+          {dayNames.map((day) => (
+            <View key={day} style={styles.dayNameCell}>
+              <Text style={styles.dayNameText}>{day}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.daysRow}>
+          {weekDates.map((date) => {
+            const dateKey = formatDateKey(date);
+            const workout = hasWorkout(date);
+            const selected = isSelected(date);
+            const today = isToday(date);
+
+            return (
+              <TouchableOpacity
+                key={dateKey}
+                style={[
+                  styles.dayCell,
+                  styles.dayCellWeek,
+                  selected && styles.dayCellSelected,
+                  today && !selected && styles.dayCellToday,
+                ]}
+                onPress={() => onDateChange(date)}
+              >
+                <Text
+                  style={[
+                    styles.dayNumber,
+                    selected && styles.dayNumberSelected,
+                    today && !selected && styles.dayNumberToday,
+                  ]}
+                >
+                  {date.getDate()}
+                </Text>
+                {workout && (
+                  <View style={styles.workoutIndicators}>
+                    <View
+                      style={[
+                        styles.workoutDot,
+                        selected && styles.workoutDotSelected,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.workoutDot,
+                        selected && styles.workoutDotSelected,
+                      ]}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    </>
+  );
+
+  const renderMonthView = () => (
+    <>
       {/* Month Navigation */}
       <View style={styles.monthNavigation}>
         <Text style={styles.monthYear}>
@@ -134,7 +247,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
         </View>
       </View>
 
-      {/* Calendar Grid */}
+      {/* Month Calendar Grid */}
       <View style={styles.calendar}>
         {/* Day names header */}
         <View style={styles.dayNamesRow}>
@@ -213,6 +326,32 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
           );
         })}
       </View>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* View Mode Toggle */}
+      <View style={styles.viewModeToggle}>
+        <TouchableOpacity
+          style={[styles.viewModeButton, viewMode === 'week' && styles.viewModeButtonActive]}
+          onPress={() => setViewMode('week')}
+        >
+          <Text style={[styles.viewModeText, viewMode === 'week' && styles.viewModeTextActive]}>
+            Week
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewModeButton, viewMode === 'month' && styles.viewModeButtonActive]}
+          onPress={() => setViewMode('month')}
+        >
+          <Text style={[styles.viewModeText, viewMode === 'month' && styles.viewModeTextActive]}>
+            Month
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {viewMode === 'week' ? renderWeekView() : renderMonthView()}
     </View>
   );
 };
@@ -224,7 +363,38 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  viewModeToggle: {
+    flexDirection: 'row',
+    backgroundColor: THEME.background,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
+  },
+  viewModeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  viewModeButtonActive: {
+    backgroundColor: THEME.primary,
+  },
+  viewModeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  viewModeTextActive: {
+    color: THEME.background,
+  },
   monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  weekNavigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -233,6 +403,11 @@ const styles = StyleSheet.create({
   monthYear: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: THEME.text,
+  },
+  weekRange: {
+    fontSize: 16,
+    fontWeight: '600',
     color: THEME.text,
   },
   navControls: {
@@ -268,6 +443,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 8,
     paddingLeft: 28, // Space for week number column
+  },
+  dayNamesRowWeek: {
+    flexDirection: 'row',
+    marginBottom: 8,
   },
   weekNumberHeader: {
     width: 28,
@@ -324,6 +503,12 @@ const styles = StyleSheet.create({
   },
   dayCellOtherMonth: {
     opacity: 0.4,
+  },
+  dayCellWeek: {
+    minHeight: 60,
+  },
+  daysRow: {
+    flexDirection: 'row',
   },
   dayNumber: {
     fontSize: 14,
