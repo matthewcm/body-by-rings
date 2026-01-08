@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { Link, Stack } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { api } from "../../convex/_generated/api";
-import { useQuery } from "convex/react";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { PhaseSelector } from './components/phase-selector/phase-selector';
 import { authStyles } from '@/features/sign-in-screen/styles/auth-styles';
 import { SignOutButton } from '@/shared/components/sign-out-button';
-import { SignedIn, useUser } from '@clerk/clerk-expo';
 import { THEME } from '@/shared/theme/colours';
+import { SignedIn, useUser } from '@clerk/clerk-expo';
+import { useQuery } from "convex/react";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { api } from "../../convex/_generated/api";
+import { PhaseSelector } from './components/phase-selector/phase-selector';
 
 
 
@@ -26,7 +26,7 @@ export default function Dashboard() {
   }, [phases]);
 
   const uniqueDays = useMemo(() => {
-    if (!templates) return [];
+    if (!templates || templates.length === 0) return [];
     return [...new Set(
       templates
         .filter(t => t.phase === selectedPhase)
@@ -53,33 +53,41 @@ export default function Dashboard() {
             <SignOutButton />
           </View>
         </SignedIn>
-        <Text style={styles.header}>Body By Rings</Text>
+        <Text style={styles.header}>XCEED</Text>
 
+ 
+ {phases && phases.length > 0 && (
         <PhaseSelector
           selectedPhase={selectedPhase}
           setSelectedPhase={setSelectedPhase}
           phases={availablePhases}
         />
+ )}
 
         <Text style={styles.subHeader}>Workouts for Phase {selectedPhase}</Text>
 
-        {uniqueDays.map(day => (
-          <Link key={day} href={{ pathname: `/workout/${selectedPhase}/${day}` }} asChild>
-            <TouchableOpacity style={styles.card}>
-              <Text style={styles.cardText}>Day {`${day} : ${phases?.find(t => t.phase === selectedPhase && t.day === day)?.type
-                }`}
-              </Text>
-              <Text style={styles.cardSubText}>
-                {phases?.find(t => t.phase === selectedPhase && t.day === day)?.title}
-              </Text>
+        {uniqueDays.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No workouts available for Phase {selectedPhase}</Text>
+            <Text style={styles.emptyStateSubtext}>Create a program and add exercises to get started</Text>
+          </View>
+        ) : (
+          uniqueDays.map(day => (
+            <Link key={day} href={{ pathname: `/workout/${selectedPhase}/${day}` }} asChild>
+              <TouchableOpacity style={styles.card}>
+                <Text style={styles.cardText}>Day {`${day} : ${phases?.find(t => t.phase === selectedPhase && t.day === day)?.type || ''}`}
+                </Text>
+                <Text style={styles.cardSubText}>
+                  {phases?.find(t => t.phase === selectedPhase && t.day === day)?.title || `Day ${day} workout`}
+                </Text>
 
-              <Text style={styles.cardSubText}>
-                Tap to start your session
-
-              </Text>
-            </TouchableOpacity>
-          </Link>
-        ))}
+                <Text style={styles.cardSubText}>
+                  Tap to start your session
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          ))
+        )}
 
           <Link href={{ pathname: `/custom-workout` }} asChild>
             <TouchableOpacity style={styles.card}>
@@ -112,6 +120,25 @@ const styles = StyleSheet.create({
   phaseButtonSelected: { backgroundColor: THEME.primary },
   phaseButtonText: { color: THEME.placeholder, fontWeight: 'bold', fontSize: 16 },
   phaseButtonTextSelected: { color: THEME.background },
+  emptyState: {
+    backgroundColor: THEME.card,
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: THEME.subtleText,
+    textAlign: 'center',
+  },
 });
 
 

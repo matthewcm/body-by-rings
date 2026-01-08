@@ -108,14 +108,15 @@ export const create_program = mutation({
 });
 
 /**
- * Deactivates (disables) the active program and removes its phases/templates
+ * Deactivates (disables) the active program by setting isActive to false
+ * The program and its data remain in the database and can be reactivated later
  */
 export const deactivate_program = mutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("You must be logged in to deactivate a program.");
+      return { success: false, message: "You must be logged in to deactivate a program." };
     }
 
     // Find active program
@@ -130,28 +131,48 @@ export const deactivate_program = mutation({
       return { success: false, message: "No active program found" };
     }
 
-    // Delete all workout templates for this program
-    // Note: programId is optional, so we filter manually to handle all cases
-    const allTemplates = await ctx.db.query("workoutTemplates").collect();
-    const templates = allTemplates.filter(t => t.programId === activeProgram._id);
+    // Just set isActive to false - don't delete anything
+    await ctx.db.patch(activeProgram._id, { isActive: false });
 
-    for (const template of templates) {
-      await ctx.db.delete(template._id);
+    return { success: true, message: "Program deactivated. You can reactivate it later." };
+  },
+});
+
+/**
+ * Activates a program by setting it as active and deactivating all other programs
+ */
+export const activate_program = mutation({
+  args: {
+    programId: v.id("programs"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("You must be logged in to activate a program.");
     }
 
-    // Delete all phase templates for this program
-    // Note: programId might be optional, so we need to filter
-    const allPhases = await ctx.db.query("phaseTemplates").collect();
-    const phases = allPhases.filter(p => p.programId === activeProgram._id);
-
-    for (const phase of phases) {
-      await ctx.db.delete(phase._id);
+    // Verify the program belongs to the user
+    const program = await ctx.db.get(args.programId);
+    if (!program || program.userId !== identity.subject) {
+      throw new Error("Unauthorized");
     }
 
-    // Delete the program itself
-    await ctx.db.delete(activeProgram._id);
+    // Deactivate all other programs for this user
+    const allPrograms = await ctx.db
+      .query("programs")
+      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .collect();
 
-    return { success: true, message: "Program deactivated and removed" };
+    for (const p of allPrograms) {
+      if (p._id !== args.programId && p.isActive) {
+        await ctx.db.patch(p._id, { isActive: false });
+      }
+    }
+
+    // Activate the selected program
+    await ctx.db.patch(args.programId, { isActive: true });
+
+    return { success: true, message: "Program activated" };
   },
 });
 

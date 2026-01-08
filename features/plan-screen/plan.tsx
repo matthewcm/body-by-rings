@@ -3,9 +3,10 @@ import { THEME } from '@/shared/theme/colours';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from './components/action-button';
+import { ConfirmModal } from './components/confirm-modal';
 import { CreateProgramModal } from './components/create-program-modal';
 import { EditProgramModal } from './components/edit-program-modal';
 import { PlanCard } from './components/plan-card';
@@ -13,31 +14,27 @@ import { PlanCard } from './components/plan-card';
 export default function PlanScreen() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDisableConfirm, setShowDisableConfirm] = useState(false);
 
     const activeProgram = useQuery(api.programs.get_active_program);
+    const allPrograms = useQuery(api.programs.get_all_programs);
     const deactivateProgram = useMutation(api.programs.deactivate_program);
+    const activateProgram = useMutation(api.programs.activate_program);
     const createProgram = useMutation(api.programs.create_program);
 
-    const handleDeactivate = () => {
-        Alert.alert(
-            'Disable Program',
-            'This will remove all phases and exercises for this program. Are you sure?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Disable',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deactivateProgram({});
-                            Alert.alert('Success', 'Program has been disabled and removed');
-                        } catch (error) {
-                            Alert.alert('Error', error instanceof Error ? error.message : 'Failed to disable program');
-                        }
-                    },
-                },
-            ]
-        );
+    const handleDeactivate = async () => {
+        try {
+            const result = await deactivateProgram({});
+            if (result?.success) {
+                setShowDisableConfirm(false);
+                // The query will automatically refresh and show the empty state
+            } else {
+                // Show error if needed
+                console.error('Failed to disable program:', result?.message);
+            }
+        } catch (error) {
+            console.error('Error disabling program:', error);
+        }
     };
 
     const handleCreateProgram = async (title: string, description: string, numberOfPhases: number) => {
@@ -69,7 +66,7 @@ export default function PlanScreen() {
                             
                             <TouchableOpacity
                                 style={styles.disableButton}
-                                onPress={handleDeactivate}
+                                onPress={() => setShowDisableConfirm(true)}
                             >
                                 <FontAwesome5 name="times-circle" size={16} color={THEME.error} />
                                 <Text style={styles.disableButtonText}>Disable Program</Text>
@@ -82,8 +79,62 @@ export default function PlanScreen() {
                         <View style={styles.emptyState}>
                             <FontAwesome5 name="calendar-times" size={48} color={THEME.placeholder} />
                             <Text style={styles.emptyStateText}>No active program</Text>
-                            <Text style={styles.emptyStateSubtext}>Create a new program to get started</Text>
+                            <Text style={styles.emptyStateSubtext}>Create a new program or switch to an existing one</Text>
                         </View>
+                    </>
+                )}
+
+                {allPrograms && allPrograms.length > 0 && (
+                    <>
+                        <Text style={styles.sectionTitle}>All Programs</Text>
+                        {allPrograms.map((program) => (
+                            <TouchableOpacity
+                                key={program._id}
+                                style={[
+                                    styles.programCard,
+                                    program.isActive && styles.activeProgramCard,
+                                ]}
+                                onPress={async () => {
+                                    if (!program.isActive) {
+                                        try {
+                                            await activateProgram({ programId: program._id });
+                                        } catch (error) {
+                                            console.error('Error activating program:', error);
+                                        }
+                                    }
+                                }}
+                            >
+                                <View style={styles.programCardContent}>
+                                    <View style={styles.programCardHeader}>
+                                        <Text style={styles.programCardTitle}>{program.title}</Text>
+                                        {program.isActive && (
+                                            <View style={styles.activeBadge}>
+                                                <Text style={styles.activeBadgeText}>Active</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Text style={styles.programCardDescription}>{program.description}</Text>
+                                    <Text style={styles.programCardPhases}>
+                                        {program.numberOfPhases} phase{program.numberOfPhases !== 1 ? 's' : ''}
+                                    </Text>
+                                </View>
+                                {!program.isActive && (
+                                    <TouchableOpacity
+                                        style={styles.switchButton}
+                                        onPress={async () => {
+                                            try {
+                                                await activateProgram({ programId: program._id });
+                                            } catch (error) {
+                                                console.error('Error activating program:', error);
+                                            }
+                                        }}
+                                    >
+                                        <FontAwesome5 name="check" size={14} color={THEME.primary} />
+                                        <Text style={styles.switchButtonText}>Switch to</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </TouchableOpacity>
+                        ))}
                     </>
                 )}
 
@@ -107,6 +158,17 @@ export default function PlanScreen() {
                 visible={showEditModal}
                 programId={activeProgram?._id || null}
                 onClose={() => setShowEditModal(false)}
+            />
+
+            <ConfirmModal
+                visible={showDisableConfirm}
+                title="Disable Program"
+                message="This will deactivate the current program. You can switch back to it later. Your custom workouts will remain available. Continue?"
+                confirmText="Disable"
+                cancelText="Cancel"
+                destructive={true}
+                onConfirm={handleDeactivate}
+                onCancel={() => setShowDisableConfirm(false)}
             />
         </SafeAreaView>
     );
@@ -175,6 +237,72 @@ const styles = StyleSheet.create({
         color: THEME.subtleText,
         marginTop: 8,
         textAlign: 'center',
+    },
+    programCard: {
+        backgroundColor: THEME.card,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: THEME.border,
+    },
+    activeProgramCard: {
+        borderColor: THEME.primary,
+        borderWidth: 2,
+    },
+    programCardContent: {
+        flex: 1,
+    },
+    programCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    programCardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: THEME.text,
+        flex: 1,
+    },
+    activeBadge: {
+        backgroundColor: THEME.primary,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+    },
+    activeBadgeText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    programCardDescription: {
+        fontSize: 14,
+        color: THEME.subtleText,
+        marginBottom: 8,
+        lineHeight: 20,
+    },
+    programCardPhases: {
+        fontSize: 12,
+        color: THEME.placeholder,
+    },
+    switchButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        backgroundColor: THEME.background,
+        borderWidth: 1,
+        borderColor: THEME.primary,
+        alignSelf: 'flex-start',
+    },
+    switchButtonText: {
+        color: THEME.primary,
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

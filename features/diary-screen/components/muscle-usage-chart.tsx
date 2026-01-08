@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { THEME } from '@/shared/theme/colours';
-import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { exerciseMuscleMap } from '@/shared/constants/muscle-mapping';
+import { THEME } from '@/shared/theme/colours';
+import { useQuery } from 'convex/react';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface MuscleUsageChartProps {
   workoutLogs: Array<{
@@ -47,8 +47,8 @@ export const MuscleUsageChart: React.FC<MuscleUsageChartProps> = ({ workoutLogs 
           const customExercise = customTemplates.find(
             ex => normalizeExerciseName(ex.exerciseName) === normalizedName
           );
-          if (customExercise?.muscles) {
-            muscles = customExercise.muscles;
+          if (customExercise?.exercise?.muscles) {
+            muscles = customExercise.exercise.muscles;
           }
         }
         

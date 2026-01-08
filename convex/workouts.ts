@@ -9,11 +9,30 @@ import { mutation, query } from "./_generated/server";
 
 /**
  * Fetches all workout templates from the database with exercise catalog data joined.
- * Your app calls this to know what exercises to display.
+ * Only returns templates for the active program.
  */
 export const get_all_workout_templates = query({
   handler: async (ctx) => {
-    const templates = await ctx.db.query("workoutTemplates").collect();
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    // Get active program for the user
+    const activeProgram = await ctx.db
+      .query("programs")
+      .withIndex("by_user_active", (q) =>
+        q.eq("userId", identity.subject).eq("isActive", true)
+      )
+      .first();
+
+    if (!activeProgram) {
+      return [];
+    }
+
+    // Get templates for the active program
+    const allTemplates = await ctx.db.query("workoutTemplates").collect();
+    const templates = allTemplates.filter(t => t.programId === activeProgram._id);
     
     // Get all unique exercise IDs
     const exerciseIds = [...new Set(templates.map(t => t.exerciseId).filter(Boolean))];
@@ -90,12 +109,32 @@ export const get_all_custom_workout_templates = query({
 });
 
 export const get_workout_templates_for_phase = query({
-  handler: async (ctx, args: {
-    phase: number
-  }) => {
-    const templates = await ctx.db.query("workoutTemplates")
-      .filter(q => q.eq(q.field('phase'), args.phase))
-      .collect();
+  args: {
+    phase: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return [];
+    }
+
+    // Get active program for the user
+    const activeProgram = await ctx.db
+      .query("programs")
+      .withIndex("by_user_active", (q) =>
+        q.eq("userId", identity.subject).eq("isActive", true)
+      )
+      .first();
+
+    if (!activeProgram) {
+      return [];
+    }
+
+    // Get templates for the active program and phase
+    const allTemplates = await ctx.db.query("workoutTemplates").collect();
+    const templates = allTemplates.filter(
+      t => t.programId === activeProgram._id && t.phase === args.phase
+    );
     
     // Get all unique exercise IDs
     const exerciseIds = [...new Set(templates.map(t => t.exerciseId).filter(Boolean))];
