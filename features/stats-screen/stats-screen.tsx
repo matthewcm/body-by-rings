@@ -1,14 +1,28 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProgressionTable } from '@/features/stats-screen/components/progression-table/progression-table';
 import { THEME } from '@/shared/theme/colours';
+import { useQuery } from "convex/react";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { api } from "../../convex/_generated/api";
 
 
 
+
+// Normalize exercise name: lowercase and remove pluralization
+const normalizeExerciseName = (name: string): string => {
+  let normalized = name.toLowerCase().trim();
+  // Remove trailing 'es' if word is long enough (e.g., "thrusters" -> "thruster")
+  if (normalized.length > 3 && normalized.endsWith('es')) {
+    normalized = normalized.slice(0, -2);
+  }
+  // Remove trailing 's' if word is long enough (e.g., "thrusters" -> "thruster", but keep "push" as "push")
+  else if (normalized.length > 2 && normalized.endsWith('s')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+};
 
 export default function StatsScreen() {
   const logs = useQuery(api.workouts.getWorkoutLogs);
@@ -24,7 +38,15 @@ export default function StatsScreen() {
 
   const uniqueCustomExercises = useMemo(() => {
     if (!customTemplates) return [];
-    return [...new Set(customTemplates.map(t => t.exerciseName))];
+    
+    const normalizedMap = new Map<string, string>();
+    customTemplates.forEach(t => {
+      const normalizedKey = normalizeExerciseName(t.exerciseName);
+      if (!normalizedMap.has(normalizedKey)) {
+        normalizedMap.set(normalizedKey, t.exerciseName);
+      }
+    });
+    return Array.from(normalizedMap.values());
   }, [customTemplates]);
 
   useEffect(() => {
@@ -39,9 +61,12 @@ export default function StatsScreen() {
 
   const tableData = useMemo(() => {
     if (!logs || !selectedExercise) return [];
+    const normalizedSelectedExercise = normalizeExerciseName(selectedExercise);
     return logs
       .map(log => {
-        const performance = log.performance.find(p => p.exerciseName === selectedExercise);
+        const performance = log.performance.find(p => 
+          normalizeExerciseName(p.exerciseName) === normalizedSelectedExercise
+        );
         if (!performance || performance.sets.length === 0) return null;
 
         const numericSets = performance.sets.map(s => ({

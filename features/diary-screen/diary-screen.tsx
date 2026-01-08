@@ -1,13 +1,13 @@
 
-import React, { useMemo } from 'react';
-import { Text, StyleSheet, ScrollView, View } from 'react-native';
-import { THEME } from '@/shared/theme/colours';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/convex/_generated/api';
+import { THEME } from '@/shared/theme/colours';
 import { useQuery } from 'convex/react';
+import React, { useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityModal } from './components/activity-modal';
 import { DiaryActivities } from './components/diary-table';
 import { SummaryLog } from './types/summary-log';
-import { ActivityModal } from './components/activity-modal';
 
 
 export default function DiaryScreen() {
@@ -29,7 +29,7 @@ export default function DiaryScreen() {
           const totalVolume = lastPerformance.sets.reduce((sum, s) => sum + parseInt(s.reps), 0)
           const avgReps = (totalReps / setsCount).toFixed(1);
           return {
-            date: new Date(workoutSession.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' }),
+            date: new Date(workoutSession.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }),
             summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${totalVolume}`,
             title: lastPerformance.exerciseName,
             notes: lastPerformance.notes,

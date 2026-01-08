@@ -91,7 +91,9 @@ export default function CustomWorkoutScreen() {
         });
       });
 
+
       setTemplates(prev => [...prev, ...allExercises]);
+
     } catch (error) {
       console.error(error);
       Alert.alert("Scan Failed", "AI could not structure the CrossFit workout.");
@@ -102,8 +104,15 @@ export default function CustomWorkoutScreen() {
 
   // --- EXISTING HANDLERS ---
   const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => {
-    setPerformanceLog(prev => ({ ...prev, [exerciseId]: data }));
-    setTemplates(prev => prev.map(t => t._id === exerciseId ? { ...t, exerciseName: data.exerciseName } : t));
+    const exercise = templates.find((t) => t._id === exerciseId)
+    setPerformanceLog(prev => ({ ...prev, [exerciseId]: {
+      ... data ,
+      exerciseName: data?.exerciseName || exercise?.exerciseName || ''
+    } }));
+    setTemplates(prev => prev.map(t => t._id === exerciseId ? { 
+      ...t,
+      exerciseName: data?.exerciseName || exercise?.exerciseName || ''
+      } : t));
   }
 
   const handleDeleteExercise = (exerciseId: Id<'workoutTemplates'>) => {

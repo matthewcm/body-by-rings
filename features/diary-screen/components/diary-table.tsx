@@ -1,8 +1,8 @@
 
 import { THEME } from '@/shared/theme/colours';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SummaryLog } from '../types/summary-log';
 import { useMemo } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SummaryLog } from '../types/summary-log';
 
 export const DiaryActivities = ({
   data,
@@ -15,6 +15,8 @@ export const DiaryActivities = ({
   const sortedKeys = useMemo(() => {
     return Object.keys(data).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   }, [data])
+
+  console.log(data)
 
   return (
     <View style={styles.tableContainer}>
