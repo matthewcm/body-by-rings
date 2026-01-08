@@ -1,5 +1,5 @@
-import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 /**
  * This file defines the functions your frontend can call.
@@ -178,5 +178,86 @@ export const getLastWorkoutLog = query({
       .first();     // Return only the single most recent log
 
     return lastLog;
+  },
+});
+
+/**
+ * Updates the exercise name for a custom workout template
+ */
+export const updateCustomExerciseName = mutation({
+  args: {
+    exerciseId: v.id("customWorkoutTemplates"),
+    newName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("You must be logged in to update an exercise.");
+    }
+
+    const exercise = await ctx.db.get(args.exerciseId);
+    if (!exercise || exercise.userId !== identity.subject) {
+      throw new Error("Exercise not found or you don't have permission to update it.");
+    }
+
+    await ctx.db.patch(args.exerciseId, {
+      exerciseName: args.newName,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Updates the muscles for a custom workout template
+ */
+export const updateCustomExerciseMuscles = mutation({
+  args: {
+    exerciseId: v.id("customWorkoutTemplates"),
+    muscles: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("You must be logged in to update an exercise.");
+    }
+
+    const exercise = await ctx.db.get(args.exerciseId);
+    if (!exercise || exercise.userId !== identity.subject) {
+      throw new Error("Exercise not found or you don't have permission to update it.");
+    }
+
+    await ctx.db.patch(args.exerciseId, {
+      muscles: args.muscles,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Gets a custom exercise by name (for finding exercise to edit)
+ */
+export const getCustomExerciseByName = query({
+  args: {
+    exerciseName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
+    const exercise = await ctx.db
+      .query("customWorkoutTemplates")
+      .filter(q => 
+        q.and(
+          q.eq(q.field("exerciseName"), args.exerciseName),
+          q.eq(q.field("userId"), identity.subject)
+        )
+      )
+      .first();
+
+    return exercise;
   },
 });

@@ -30,6 +30,7 @@ export default defineSchema({
     tempo: v.string(),
     rest: v.string(),
     userId: v.string(),
+    muscles: v.optional(v.array(v.string())), // Array of muscle groups worked by this exercise
   }).index("by_day", ["day"]), // An index makes querying by day faster
 
   // Table to store your actual, completed workout logs
