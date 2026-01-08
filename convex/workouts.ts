@@ -30,9 +30,11 @@ export const get_all_workout_templates = query({
       return [];
     }
 
-    // Get templates for the active program
-    const allTemplates = await ctx.db.query("workoutTemplates").collect();
-    const templates = allTemplates.filter(t => t.programId === activeProgram._id);
+    // Get templates for the active program using the index
+    const templates = await ctx.db
+      .query("workoutTemplates")
+      .withIndex("by_program", (q) => q.eq("programId", activeProgram._id))
+      .collect();
     
     // Get all unique exercise IDs
     const exerciseIds = [...new Set(templates.map(t => t.exerciseId).filter(Boolean))];
@@ -130,11 +132,13 @@ export const get_workout_templates_for_phase = query({
       return [];
     }
 
-    // Get templates for the active program and phase
-    const allTemplates = await ctx.db.query("workoutTemplates").collect();
-    const templates = allTemplates.filter(
-      t => t.programId === activeProgram._id && t.phase === args.phase
-    );
+    // Get templates for the active program using the index, then filter by phase
+    const allProgramTemplates = await ctx.db
+      .query("workoutTemplates")
+      .withIndex("by_program", (q) => q.eq("programId", activeProgram._id))
+      .collect();
+    
+    const templates = allProgramTemplates.filter(t => t.phase === args.phase);
     
     // Get all unique exercise IDs
     const exerciseIds = [...new Set(templates.map(t => t.exerciseId).filter(Boolean))];

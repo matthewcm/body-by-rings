@@ -1,8 +1,9 @@
 import { api } from '@/convex/_generated/api';
 import { THEME } from '@/shared/theme/colours';
+import { useUser } from '@clerk/clerk-expo';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from './components/action-button';
@@ -15,12 +16,43 @@ export default function PlanScreen() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+    const { isSignedIn, isLoaded } = useUser();
 
     const activeProgram = useQuery(api.programs.get_active_program);
     const allPrograms = useQuery(api.programs.get_all_programs);
     const deactivateProgram = useMutation(api.programs.deactivate_program);
     const activateProgram = useMutation(api.programs.activate_program);
     const createProgram = useMutation(api.programs.create_program);
+    const ensureDefaultProgram = useMutation(api.seed_default_program.ensure_default_program);
+
+    // Ensure default program exists when component mounts and user has no active program
+    useEffect(() => {
+        // Only run if:
+        // 1. User authentication state is loaded
+        // 2. User is signed in
+        // 3. Queries have finished loading (not undefined)
+        // 4. No active program exists
+        // 5. No programs exist at all
+        if (
+            isLoaded &&
+            isSignedIn &&
+            activeProgram !== undefined && 
+            allPrograms !== undefined && 
+            activeProgram === null && 
+            allPrograms.length === 0
+        ) {
+            // No active program and no programs at all - create default
+            ensureDefaultProgram({}).catch(err => {
+                // Silently handle authentication errors - these are expected during initial load
+                const errorMessage = err?.message || err?.toString() || '';
+                if (errorMessage.includes('logged in') || errorMessage.includes('must be logged in')) {
+                    // User not fully authenticated yet, this is expected
+                    return;
+                }
+                console.error('Error ensuring default program:', err);
+            });
+        }
+    }, [isLoaded, isSignedIn, activeProgram, allPrograms, ensureDefaultProgram]);
 
     const handleDeactivate = async () => {
         try {
@@ -146,6 +178,26 @@ export default function PlanScreen() {
                     onPress={() => setShowCreateModal(true)}
                     disabled={false}
                 />
+                {(!activeProgram && (!allPrograms || allPrograms.length === 0)) && (
+                    <ActionButton
+                        icon="seedling"
+                        title="Create Default Program"
+                        subtitle="Create the default Body By Rings calisthenics program."
+                        onPress={async () => {
+                            try {
+                                const result = await ensureDefaultProgram({});
+                                if (result?.success) {
+                                    console.log('Default program created:', result.message);
+                                } else {
+                                    console.log('Default program creation:', result?.message);
+                                }
+                            } catch (error) {
+                                console.error('Error creating default program:', error);
+                            }
+                        }}
+                        disabled={false}
+                    />
+                )}
             </ScrollView>
 
             <CreateProgramModal

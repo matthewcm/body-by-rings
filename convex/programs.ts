@@ -185,10 +185,13 @@ export const get_program_templates = query({
     phase: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const templates = await ctx.db
+    // Use index for efficient querying
+    const allTemplates = await ctx.db
       .query("workoutTemplates")
       .withIndex("by_program", (q) => q.eq("programId", args.programId))
       .collect();
+    
+    const templates = args.programId ? allTemplates : [];
 
     // Filter by phase if provided
     const filtered = args.phase
