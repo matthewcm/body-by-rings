@@ -1,3 +1,4 @@
+import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -36,6 +37,8 @@ export default function StatsScreen() {
   const [editingName, setEditingName] = useState('');
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [currentExerciseId, setCurrentExerciseId] = useState<Id<'customWorkoutTemplates'> | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'standard' | 'custom'>('all');
   
   const updateExerciseName = useMutation(api.workouts.updateCustomExerciseName);
   const updateExerciseMuscles = useMutation(api.workouts.updateCustomExerciseMuscles);
@@ -72,18 +75,75 @@ export default function StatsScreen() {
         normalizedMap.set(normalizedKey, t.exerciseName);
       }
     });
-    return Array.from(normalizedMap.values());
+    return Array.from(normalizedMap.values()).sort();
   }, [customTemplates]);
 
-  useEffect(() => {
-    if (uniqueExercises.length > 0 && !uniqueExercises.includes(selectedExercise)) {
-      if (uniqueCustomExercises.length > 0 && !uniqueCustomExercises.includes(selectedExercise)) {
-        setSelectedExercise(uniqueExercises[0]);
-      }
-    } else if (uniqueExercises.length === 0) {
-      setSelectedExercise('');
+  // Combined and filtered exercises
+  const allExercises = useMemo(() => {
+    const standard = uniqueExercises.map(ex => ({ name: ex, type: 'standard' as const }));
+    const custom = uniqueCustomExercises.map(ex => ({ name: ex, type: 'custom' as const }));
+    return [...standard, ...custom].sort((a, b) => a.name.localeCompare(b.name));
+  }, [uniqueExercises, uniqueCustomExercises]);
+
+  // Filtered exercises based on search and filter
+  const filteredExercises = useMemo(() => {
+    let filtered = allExercises;
+
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(ex => ex.type === filterType);
     }
-  }, [uniqueExercises, uniqueCustomExercises, selectedExercise]);
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(ex => 
+        ex.name.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [allExercises, filterType, searchQuery]);
+
+  // Group exercises by first letter
+  const exercisesByLetter = useMemo(() => {
+    const grouped: Record<string, typeof filteredExercises> = {};
+    
+    filteredExercises.forEach(ex => {
+      const firstLetter = ex.name.charAt(0).toUpperCase();
+      if (!grouped[firstLetter]) {
+        grouped[firstLetter] = [];
+      }
+      grouped[firstLetter].push(ex);
+    });
+
+    // Sort letters and ensure exercises within each letter are sorted
+    Object.keys(grouped).forEach(letter => {
+      grouped[letter].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    return grouped;
+  }, [filteredExercises]);
+
+  // Get available letters for index
+  const availableLetters = useMemo(() => {
+    return Object.keys(exercisesByLetter).sort();
+  }, [exercisesByLetter]);
+
+  useEffect(() => {
+    // Check if selected exercise still exists in filtered list
+    if (selectedExercise && !allExercises.some(ex => ex.name === selectedExercise)) {
+      // Selected exercise no longer exists, select first available
+      if (allExercises.length > 0) {
+        setSelectedExercise(allExercises[0].name);
+      } else {
+        setSelectedExercise('');
+      }
+    } else if (!selectedExercise && allExercises.length > 0) {
+      // No exercise selected, select first available
+      setSelectedExercise(allExercises[0].name);
+    }
+  }, [allExercises, selectedExercise]);
 
   // Update editing state when exercise changes
   useEffect(() => {
@@ -166,32 +226,112 @@ export default function StatsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Progression</Text>
 
-
-        <Text style={styles.subHeader}>Select an Exercise</Text>
-        <View style={styles.chipContainer}>
-          {uniqueExercises.map(ex => (
-            <TouchableOpacity
-              key={ex}
-              style={[styles.chip, selectedExercise === ex && styles.chipSelected]}
-              onPress={() => setSelectedExercise(ex)}
-            >
-              <Text style={[styles.chipText, selectedExercise === ex && styles.chipTextSelected]}>{ex}</Text>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <FontAwesome5 name="search" size={16} color={THEME.placeholder} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search exercises..."
+            placeholderTextColor={THEME.placeholder}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <FontAwesome5 name="times" size={14} color={THEME.placeholder} />
             </TouchableOpacity>
-          ))}
+          )}
         </View>
 
-        <Text style={styles.subHeader}>Custom Exercises</Text>
-        <View style={styles.chipContainer}>
-          {uniqueCustomExercises.map(ex => (
-            <TouchableOpacity
-              key={ex}
-              style={[styles.chip, selectedExercise === ex && styles.chipSelected]}
-              onPress={() => setSelectedExercise(ex)}
-            >
-              <Text style={[styles.chipText, selectedExercise === ex && styles.chipTextSelected]}>{ex}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Filter Buttons */}
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterChip, filterType === 'all' && styles.filterChipSelected]}
+            onPress={() => setFilterType('all')}
+          >
+            <Text style={[styles.filterChipText, filterType === 'all' && styles.filterChipTextSelected]}>
+              All ({allExercises.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterType === 'standard' && styles.filterChipSelected]}
+            onPress={() => setFilterType('standard')}
+          >
+            <Text style={[styles.filterChipText, filterType === 'standard' && styles.filterChipTextSelected]}>
+              Standard ({uniqueExercises.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filterType === 'custom' && styles.filterChipSelected]}
+            onPress={() => setFilterType('custom')}
+          >
+            <Text style={[styles.filterChipText, filterType === 'custom' && styles.filterChipTextSelected]}>
+              Custom ({uniqueCustomExercises.length})
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Exercise List */}
+        {filteredExercises.length > 0 ? (
+          <View style={styles.exerciseListContainer}>
+            {/* Alphabetical Index */}
+            <View style={styles.indexContainer}>
+              {Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).map(letter => (
+                <View
+                  key={letter}
+                  style={[
+                    styles.indexLetter,
+                    availableLetters.includes(letter) && styles.indexLetterActive
+                  ]}
+                >
+                  <Text style={[
+                    styles.indexLetterText,
+                    availableLetters.includes(letter) && styles.indexLetterTextActive
+                  ]}>
+                    {letter}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Exercise List */}
+            <ScrollView 
+              style={styles.exerciseList} 
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {availableLetters.map(letter => (
+                <View key={letter} style={styles.letterSection}>
+                  <Text style={styles.letterHeader}>{letter}</Text>
+                  {exercisesByLetter[letter].map((ex) => (
+                    <TouchableOpacity
+                      key={`${ex.type}-${ex.name}`}
+                      style={[styles.exerciseChip, selectedExercise === ex.name && styles.exerciseChipSelected]}
+                      onPress={() => setSelectedExercise(ex.name)}
+                    >
+                      <Text style={[styles.exerciseChipText, selectedExercise === ex.name && styles.exerciseChipTextSelected]}>
+                        {ex.name}
+                      </Text>
+                      {ex.type === 'custom' && (
+                        <FontAwesome5 
+                          name="star" 
+                          size={12} 
+                          color={selectedExercise === ex.name ? THEME.background : THEME.primary} 
+                          style={styles.customIcon} 
+                        />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No exercises found</Text>
+            <Text style={styles.emptyStateSubtext}>Try adjusting your search or filter</Text>
+          </View>
+        )}
 
         {selectedExercise && (
           <View style={styles.card}>
@@ -316,6 +456,81 @@ const styles = StyleSheet.create({
   container: { padding: 16 },
   header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
   subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 16 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.card,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    color: THEME.text,
+    fontSize: 16,
+    padding: 0,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    backgroundColor: THEME.card,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  filterChipSelected: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  filterChipText: {
+    color: THEME.text,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  filterChipTextSelected: {
+    color: THEME.background,
+    fontWeight: 'bold',
+  },
+  sectionHeader: {
+    width: '100%',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.subtleText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text,
+    marginBottom: 4,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: THEME.subtleText,
+  },
   card: { backgroundColor: THEME.card, borderRadius: 12, padding: 16 },
   exerciseHeader: { marginBottom: 16 },
   exerciseNameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -375,11 +590,80 @@ const styles = StyleSheet.create({
   },
   muscleMapContainer: { marginBottom: 20, alignItems: 'center' },
   muscleMapWrapper: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width: '100%' },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 24, gap: 8 },
-  chip: { backgroundColor: THEME.card, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: THEME.primary },
-  chipSelected: { backgroundColor: THEME.primary },
-  chipText: { color: THEME.primary },
-  chipTextSelected: { color: THEME.background, fontWeight: 'bold' },
+  exerciseListContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    height: 400,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: THEME.card,
+  },
+  indexContainer: {
+    width: 32,
+    borderRightWidth: 1,
+    borderRightColor: THEME.border,
+    backgroundColor: THEME.background,
+  },
+  indexLetter: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+  },
+  indexLetterActive: {
+    backgroundColor: THEME.card,
+  },
+  indexLetterText: {
+    fontSize: 12,
+    color: THEME.placeholder,
+    fontWeight: '600',
+  },
+  indexLetterTextActive: {
+    color: THEME.primary,
+  },
+  exerciseList: {
+    flex: 1,
+    padding: 12,
+  },
+  letterSection: {
+    marginBottom: 16,
+  },
+  letterHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.primary,
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  exerciseChip: {
+    backgroundColor: THEME.background,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  exerciseChipSelected: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  exerciseChipText: {
+    color: THEME.text,
+    fontSize: 15,
+    flex: 1,
+  },
+  exerciseChipTextSelected: {
+    color: THEME.background,
+    fontWeight: '600',
+  },
+  customIcon: { marginLeft: 8 },
   phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
   phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
   phaseButtonSelected: { backgroundColor: THEME.primary },
