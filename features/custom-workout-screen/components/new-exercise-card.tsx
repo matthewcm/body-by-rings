@@ -1,16 +1,32 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 import { useCountdown } from '@/shared/hooks/use-countdown';
 import { PerformanceLog } from '@/shared/models/exercise';
-import { Id } from '@/convex/_generated/dataModel';
+import { THEME } from '@/shared/theme/colours';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useQuery } from 'convex/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 // --- Helper to get an icon based on exercise name ---
 const getExerciseIcon = (_name: string) => {
   // TODO 
   return 'dumbbell';
+};
+
+// Normalize exercise name: lowercase and remove pluralization
+const normalizeExerciseName = (name: string): string => {
+  let normalized = name.toLowerCase().trim();
+  // Remove trailing 'es' if word is long enough (e.g., "thrusters" -> "thruster")
+  if (normalized.length > 3 && normalized.endsWith('es')) {
+    normalized = normalized.slice(0, -2);
+  }
+  // Remove trailing 's' if word is long enough (e.g., "thrusters" -> "thruster", but keep "push" as "push")
+  else if (normalized.length > 2 && normalized.endsWith('s')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
 };
 
 export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}: {
@@ -22,6 +38,79 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}
   const setsToRender = performanceData?.sets || [];
   const lastPerformance = performanceData?.lastPerformance;
   const { start: startRest, isActive: isResting, formattedTime: restTime } = useCountdown(90, () => { });
+  
+  // Autocomplete state
+  const customExercises = useQuery(api.workouts.getAllCustomWorkoutTemplates);
+  const [exerciseNameInput, setExerciseNameInput] = useState(performanceData?.exerciseName || exercise.exerciseName);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+  const containerRef = useRef<View>(null);
+
+  // Get unique exercise names from custom exercises (normalized to prevent duplicates)
+  const uniqueCustomExerciseNames = useMemo(() => {
+    if (!customExercises) return [];
+    const normalizedMap = new Map<string, string>();
+    customExercises.forEach(ex => {
+      if (ex.exerciseName) {
+        const normalizedKey = normalizeExerciseName(ex.exerciseName);
+        if (!normalizedMap.has(normalizedKey)) {
+          normalizedMap.set(normalizedKey, ex.exerciseName);
+        }
+      }
+    });
+    return Array.from(normalizedMap.values()).sort();
+  }, [customExercises]);
+
+  // Filter exercises based on input
+  const filteredExercises = useMemo(() => {
+    if (!exerciseNameInput.trim()) return [];
+    const lowerInput = exerciseNameInput.toLowerCase();
+    return uniqueCustomExerciseNames.filter(name => 
+      name.toLowerCase().includes(lowerInput) && 
+      name.toLowerCase() !== lowerInput
+    ).slice(0, 5); // Limit to 5 suggestions
+  }, [exerciseNameInput, uniqueCustomExerciseNames]);
+
+  // Sync input state with performanceData when it changes externally
+  // We intentionally exclude exerciseNameInput from dependencies to avoid infinite loops
+  // This effect only syncs external changes, not user input changes
+  useEffect(() => {
+    const currentName = performanceData?.exerciseName || exercise.exerciseName;
+    if (currentName !== exerciseNameInput) {
+      setExerciseNameInput(currentName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [performanceData?.exerciseName, exercise.exerciseName]);
+
+  const handleExerciseNameChange = (value: string) => {
+    setExerciseNameInput(value);
+    setShowDropdown(value.trim().length > 0 && filteredExercises.length > 0);
+    onUpdate(exercise._id, {
+      ...performanceData,
+      exerciseName: value
+    });
+  };
+
+  const handleSelectExercise = (selectedName: string) => {
+    setExerciseNameInput(selectedName);
+    setShowDropdown(false);
+    inputRef.current?.blur();
+    onUpdate(exercise._id, {
+      ...performanceData,
+      exerciseName: selectedName
+    });
+  };
+
+  const handleInputFocus = () => {
+    if (exerciseNameInput.trim().length > 0) {
+      setShowDropdown(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay hiding dropdown to allow for selection
+    setTimeout(() => setShowDropdown(false), 200);
+  };
 
   const handleSetChange = (setIndex: number, field: string, value: string) => {
     const newSets = JSON.parse(JSON.stringify(setsToRender));
@@ -40,8 +129,6 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}
   };
 
   const handleNotesChange = (value: string) => onUpdate(exercise._id, { ...performanceData, notes: value });
-
-  const handleNameChange= (value: string) => onUpdate(exercise._id, { ...performanceData, exerciseName: value });
 
   const addSet = () => {
     const lastSet = setsToRender[setsToRender.length - 1];
@@ -71,8 +158,40 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}
   return (
     <View style={styles.card}>
       <View style={styles.exerciseHeader}>
-        <FontAwesome5 name={getExerciseIcon('dumbell')} size={18} color={THEME.primary} style={{ width: 25 }} />
-        <TextInput style={styles.input} value={exercise.exerciseName} onChangeText={(val) => handleNameChange(val)} />
+        <FontAwesome5 name={getExerciseIcon(exerciseNameInput)} size={18} color={THEME.primary} style={{ width: 25 }} />
+        <View style={styles.exerciseNameContainer} ref={containerRef}>
+          <TextInput
+            ref={inputRef}
+            style={styles.exerciseTitleInput}
+            value={exerciseNameInput}
+            onChangeText={handleExerciseNameChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            placeholder="Exercise name"
+            placeholderTextColor={THEME.placeholder}
+          />
+          {showDropdown && filteredExercises.length > 0 && (
+            <View style={styles.dropdown}>
+              <FlatList
+                data={filteredExercises}
+                keyExtractor={(item) => item}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dropdownItem,
+                      index === filteredExercises.length - 1 && styles.dropdownItemLast
+                    ]}
+                    onPress={() => handleSelectExercise(item)}
+                  >
+                    <Text style={styles.dropdownItemText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                nestedScrollEnabled
+                style={styles.dropdownList}
+              />
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={() => onDelete(exercise._id)} style={styles.removeExerciseIcon}>
           <FontAwesome5 name="trash-alt" size={16} color={THEME.error} />
         </TouchableOpacity>
@@ -132,11 +251,59 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}
 
 const styles = StyleSheet.create({
   card: { backgroundColor: THEME.card, borderRadius: 12, margin: 16, marginBottom: 0, padding: 16 },
-  exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: '1rem' },
-  exerciseTitle: { fontSize: 20, fontWeight: 'bold', color: THEME.text, marginLeft: 12 },
-  restTimer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, alignSelf: 'flex-start' },
+  exerciseHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 12, zIndex: 1 },
+  exerciseNameContainer: { flex: 1, marginLeft: 12, position: 'relative', zIndex: 10000 },
+  exerciseTitleInput: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: THEME.text, 
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: THEME.background,
+    borderRadius: 8,
+    minHeight: 40,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: THEME.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: THEME.border,
+    marginTop: 4,
+    maxHeight: 180,
+    zIndex: 10001,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    overflow: 'hidden',
+  },
+  dropdownList: {
+    maxHeight: 180,
+    backgroundColor: THEME.background,
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.border,
+    backgroundColor: THEME.background,
+  },
+  dropdownItemLast: {
+    borderBottomWidth: 0,
+  },
+  dropdownItemText: {
+    color: THEME.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  restTimer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, alignSelf: 'flex-start', zIndex: 0 },
   restTimerText: { color: THEME.subtleText, marginLeft: 8, fontSize: 14, fontWeight: '500' },
-  setHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderColor: THEME.border },
+  setHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderColor: THEME.border, zIndex: 0 },
   setHeaderText: { color: THEME.placeholder, fontSize: 12, flex: 1.5, fontWeight: '600' },
   setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: THEME.border, gap: 4 },
   setRowCompleted: { backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: 'rgba(52, 199, 89, 0.4)', borderWidth: 1, marginHorizontal: -17, paddingHorizontal: 16, borderRadius: 8 },
