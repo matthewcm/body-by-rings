@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { Id } from '@/convex/_generated/dataModel';
 import { useCountdown } from '@/shared/hooks/use-countdown';
 import { PerformanceLog } from '@/shared/models/exercise';
-import { Id } from '@/convex/_generated/dataModel';
+import { THEME } from '@/shared/theme/colours';
+import { FontAwesome5 } from '@expo/vector-icons';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 // --- Helper to get an icon based on exercise name ---

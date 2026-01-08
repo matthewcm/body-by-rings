@@ -2,7 +2,7 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const scanWorkoutImage = action({
+export const scan_workout_image = action({
   args: { base64Image: v.string() },
   handler: async (ctx, args) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);

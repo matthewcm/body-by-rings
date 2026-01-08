@@ -2,7 +2,6 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { Id } from '@/convex/_generated/dataModel';
 import { ProgressionTable } from '@/features/stats-screen/components/progression-table/progression-table';
 import { THEME } from '@/shared/theme/colours';
 import { generateHexShades } from '@/shared/utils/colors';
@@ -29,19 +28,18 @@ const normalizeExerciseName = (name: string): string => {
 };
 
 export default function StatsScreen() {
-  const logs = useQuery(api.workouts.getWorkoutLogs);
-  const templates = useQuery(api.workouts.getAllWorkoutTemplates);
-  const customTemplates = useQuery(api.workouts.getAllCustomWorkoutTemplates);
+  const logs = useQuery(api.workouts.get_workout_logs);
+  const templates = useQuery(api.workouts.get_all_workout_templates);
+  const customTemplates = useQuery(api.workouts.get_all_custom_workout_templates);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
-  const [currentExerciseId, setCurrentExerciseId] = useState<Id<'customWorkoutTemplates'> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'standard' | 'custom'>('all');
   
-  const updateExerciseName = useMutation(api.workouts.updateCustomExerciseName);
-  const updateExerciseMuscles = useMutation(api.workouts.updateCustomExerciseMuscles);
+  const updateExerciseName = useMutation(api.workouts.update_custom_exercise_name);
+  const updateExerciseMuscles = useMutation(api.workouts.update_custom_exercise_muscles);
   
   // Organize muscles by body region
   const muscleGroups = useMemo(() => {
@@ -56,7 +54,15 @@ export default function StatsScreen() {
   // Get the current custom exercise data when selected
   const currentCustomExercise = useMemo(() => {
     if (!customTemplates || !selectedExercise) return null;
-    return customTemplates.find(ex => ex.exerciseName === selectedExercise);
+    const template = customTemplates.find(ex => ex.exerciseName === selectedExercise);
+    if (!template) return null;
+    
+    // Get exercise data from catalog (via the joined exercise property)
+    return {
+      ...template,
+      muscles: template.exercise?.muscles || [],
+      exerciseId: template.exerciseId || null,
+    };
   }, [customTemplates, selectedExercise]);
 
 
@@ -150,25 +156,23 @@ export default function StatsScreen() {
     if (currentCustomExercise) {
       setEditingName(currentCustomExercise.exerciseName);
       setSelectedMuscles(currentCustomExercise.muscles || []);
-      setCurrentExerciseId(currentCustomExercise._id);
       setIsEditing(false);
     } else {
       setIsEditing(false);
       setEditingName('');
       setSelectedMuscles([]);
-      setCurrentExerciseId(null);
     }
   }, [currentCustomExercise]);
 
   const handleSaveExercise = async () => {
-    if (!currentExerciseId) return;
+    if (!selectedExercise) return;
     
     try {
       if (editingName !== selectedExercise) {
-        await updateExerciseName({ exerciseId: currentExerciseId, newName: editingName });
+        await updateExerciseName({ oldName: selectedExercise, newName: editingName });
         setSelectedExercise(editingName);
       }
-      await updateExerciseMuscles({ exerciseId: currentExerciseId, muscles: selectedMuscles });
+      await updateExerciseMuscles({ exerciseName: editingName, muscles: selectedMuscles });
       setIsEditing(false);
       Alert.alert('Success', 'Exercise updated successfully');
     } catch (error) {

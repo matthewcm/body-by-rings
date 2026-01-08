@@ -1,3 +1,10 @@
+/**
+ * @deprecated This constant is deprecated. Muscle mappings are now stored in the database.
+ * Use `api.workouts.get_exercise_muscle_mappings` query instead.
+ * This file is kept temporarily for reference during migration.
+ * 
+ * To seed the database with this data, call the `seedMuscleMappings` mutation from `convex/seed-muscle-data.ts`
+ */
 export const exerciseMuscleMap = [
   // Pushing Exercises
   { exercise: 'Ring Dip', muscles: ['chest', 'deltoids', 'triceps'] },

@@ -1,18 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useAction, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { THEME } from '@/shared/theme/colours';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
-import { isNotNull } from '@/shared/utils/array';
-import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { Id } from '@/convex/_generated/dataModel';
-import { NewExerciseCard } from './components/new-exercise-card';
-import { v4 as uuidv4 } from 'uuid';
+import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
+import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
+import { THEME } from '@/shared/theme/colours';
+import { isNotNull } from '@/shared/utils/array';
+import { useAction, useMutation } from "convex/react";
 import * as ImagePicker from 'expo-image-picker';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
+import { NewExerciseCard } from './components/new-exercise-card';
 
 const GALLERY = 'gallery'
 const CAMERA = 'camera'
@@ -31,11 +31,11 @@ export default function CustomWorkoutScreen() {
   const [templates, setTemplates] = useState<{ _id: Id<'workoutTemplates'>, exerciseName: string }[]>([]);
   const [wodBlocks, setWodBlocks] = useState<any[]>([]);
 
-  const logWorkout = useMutation(api.workouts.logWorkout);
-  const createCustomExercise = useMutation(api.workouts.createCustomWorkout);
+  const logWorkout = useMutation(api.workouts.log_workout);
+  const createCustomExercise = useMutation(api.workouts.create_custom_workout);
 
   const exercisesForDay = useMemo(() => templates || [], [templates]);
-  const scanImage = useAction(api.ai.scanWorkoutImage);
+  const scanImage = useAction(api.ai.scan_workout_image);
 
 
   const handleGetWodImage = async (type: SCAN_TYPE) => {

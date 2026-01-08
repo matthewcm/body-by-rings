@@ -6,32 +6,45 @@ import { v } from "convex/values";
  * Each 'defineTable' corresponds to a table in your database.
  */
 export default defineSchema({
+  // Catalog of all exercises with their metadata (muscles, defaults, etc.)
+  exerciseCatalog: defineTable({
+    exerciseName: v.string(), // Unique exercise name (primary key equivalent)
+    muscles: v.optional(v.array(v.string())), // Array of muscle groups worked by this exercise
+    isCustom: v.boolean(), // true for user-created exercises, false for standard exercises
+    userId: v.optional(v.string()), // User ID for custom exercises (null for standard)
+  })
+    .index("by_exercise_name", ["exerciseName"]) // Index for looking up exercises by name
+    .index("by_user", ["userId"]), // Index for user-specific exercises
+
   // Table to store your workout plan/template
   workoutTemplates: defineTable({
     phase: v.number(),
     day: v.number(),
     letter: v.string(),
-    exerciseName: v.string(),
-    targetIntensity: v.string(),
-    targetSets: v.number(),
+    exerciseId: v.id("exerciseCatalog"), // Reference to exerciseCatalog
+    targetIntensity: v.string(), // Can override catalog defaults
+    targetSets: v.number(), // Can override catalog defaults
     targetReps: v.string(), // Kept as string to accommodate ranges like "8-10"
-    tempo: v.string(),
-    rest: v.string(),
-  }).index("by_day", ["day"]), // An index makes querying by day faster
+    tempo: v.string(), // Can override catalog defaults
+    rest: v.string(), // Can override catalog defaults
+  })
+    .index("by_day", ["day"]) // An index makes querying by day faster
+    .index("by_exercise_id", ["exerciseId"]), // Index for looking up exercises by ID
 
   customWorkoutTemplates: defineTable({
     phase: v.number(),
     day: v.number(),
     letter: v.string(),
-    exerciseName: v.string(),
-    targetIntensity: v.string(),
-    targetSets: v.number(),
+    exerciseId: v.id("exerciseCatalog"), // Reference to exerciseCatalog
+    targetIntensity: v.string(), // Can override catalog defaults
+    targetSets: v.number(), // Can override catalog defaults
     targetReps: v.string(), // Kept as string to accommodate ranges like "8-10"
-    tempo: v.string(),
-    rest: v.string(),
+    tempo: v.string(), // Can override catalog defaults
+    rest: v.string(), // Can override catalog defaults
     userId: v.string(),
-    muscles: v.optional(v.array(v.string())), // Array of muscle groups worked by this exercise
-  }).index("by_day", ["day"]), // An index makes querying by day faster
+  })
+    .index("by_day", ["day"]) // An index makes querying by day faster
+    .index("by_exercise_id", ["exerciseId"]), // Index for looking up exercises by ID
 
   // Table to store your actual, completed workout logs
   workoutLogs: defineTable({

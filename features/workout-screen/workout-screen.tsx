@@ -26,9 +26,9 @@ export default function WorkoutScreen() {
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<{ name?: string, summary?: string }[]>([]);
 
-  const templates = useQuery(api.workouts.getAllWorkoutTemplates);
-  const lastWorkout = useQuery(api.workouts.getLastWorkoutLog, { phase: parseInt(phase), day: parseInt(day) });
-  const logWorkout = useMutation(api.workouts.logWorkout);
+  const templates = useQuery(api.workouts.get_all_workout_templates);
+  const lastWorkout = useQuery(api.workouts.get_last_workout_log, { phase: parseInt(phase), day: parseInt(day) });
+  const logWorkout = useMutation(api.workouts.log_workout);
 
   const exercisesForDay = useMemo(() => {
     if (!templates) return [];

@@ -8,12 +8,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityModal } from './components/activity-modal';
 import { CalendarWidget } from './components/calendar-widget';
 import { DiaryActivities } from './components/diary-table';
+import { MetricsWidget } from './components/metrics-widget';
+import { MuscleUsageChart } from './components/muscle-usage-chart';
+import { PerformanceChart } from './components/performance-chart';
 import { SummaryLog } from './types/summary-log';
 
 
 export default function DiaryScreen() {
 
-  const workoutLogs = useQuery(api.workouts.getWorkoutLogs)
+  const workoutLogs = useQuery(api.workouts.get_workout_logs)
 
   const [isMoreInfoVisible, setIsMoreInfoVisible] = React.useState(false);
   const [activeExercise, setActiveExercise] = React.useState<any>(null);
@@ -128,12 +131,18 @@ export default function DiaryScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Workout Diary</Text>
 
+        <MetricsWidget workoutLogs={workoutLogs} />
+
         <CalendarWidget
           selectedDate={selectedDate}
           onDateChange={handleDateChange}
           activeDates={activeDates}
           onWeekChange={handleWeekChange}
         />
+
+        <PerformanceChart workoutLogs={workoutLogs} />
+
+        <MuscleUsageChart workoutLogs={workoutLogs} />
 
         <View>
           <DiaryActivities data={recentWorkouts} onViewMoreInfo={handleViewMoreInfo} />

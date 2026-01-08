@@ -7,7 +7,7 @@ import { query } from "./_generated/server";
  * 'mutation' functions are for writing or modifying data.
  */
 
-export const getPhases = query({
+export const get_phases = query({
   handler: async (ctx) => {
     return ((await ctx.db.query("phaseTemplates").collect()))
   },

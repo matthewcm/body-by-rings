@@ -16,8 +16,6 @@ export const DiaryActivities = ({
     return Object.keys(data).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   }, [data])
 
-  console.log(data)
-
   return (
     <View style={styles.tableContainer}>
       {/* Rows */}

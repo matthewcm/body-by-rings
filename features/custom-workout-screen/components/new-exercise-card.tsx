@@ -40,7 +40,7 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete}
   const { start: startRest, isActive: isResting, formattedTime: restTime } = useCountdown(90, () => { });
   
   // Autocomplete state
-  const customExercises = useQuery(api.workouts.getAllCustomWorkoutTemplates);
+  const customExercises = useQuery(api.workouts.get_all_custom_workout_templates);
   const [exerciseNameInput, setExerciseNameInput] = useState(performanceData?.exerciseName || exercise.exerciseName);
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<TextInput>(null);

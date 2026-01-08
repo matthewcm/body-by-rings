@@ -14,11 +14,11 @@ import { THEME } from '@/shared/theme/colours';
 
 
 export default function Dashboard() {
-  const templates = useQuery(api.workouts.getAllWorkoutTemplates);
+  const templates = useQuery(api.workouts.get_all_workout_templates);
   const [selectedPhase, setSelectedPhase] = useState(1);
   const user = useUser().user;
 
-  const phases = useQuery(api.phases.getPhases);
+  const phases = useQuery(api.phases.get_phases);
 
   const availablePhases = useMemo(() => {
     if (!phases) return [1];
