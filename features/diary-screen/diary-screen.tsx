@@ -2,10 +2,11 @@
 import { api } from '@/convex/_generated/api';
 import { THEME } from '@/shared/theme/colours';
 import { useQuery } from 'convex/react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityModal } from './components/activity-modal';
+import { CalendarWidget } from './components/calendar-widget';
 import { DiaryActivities } from './components/diary-table';
 import { SummaryLog } from './types/summary-log';
 
@@ -16,10 +17,51 @@ export default function DiaryScreen() {
 
   const [isMoreInfoVisible, setIsMoreInfoVisible] = React.useState(false);
   const [activeExercise, setActiveExercise] = React.useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Get all dates with workouts for calendar highlighting
+  const activeDates = useMemo(() => {
+    if (!workoutLogs) return new Set<string>();
+    const dates = new Set<string>();
+    workoutLogs.forEach(log => {
+      const dateKey = new Date(log.date).toISOString().split('T')[0];
+      dates.add(dateKey);
+    });
+    return dates;
+  }, [workoutLogs]);
+
+  // Get workouts for the selected week
+  const getWeekDates = (date: Date): Date[] => {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const monday = new Date(date);
+    monday.setDate(diff);
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      week.push(d);
+    }
+    return week;
+  };
 
   const recentWorkouts = useMemo(() => {
     if (!workoutLogs) return {};
-    const sortedLogs = workoutLogs
+    
+    // Get the week range for filtering
+    const weekDates = getWeekDates(selectedDate);
+    const weekStart = weekDates[0];
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = weekDates[6];
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    // Filter workouts for the selected week
+    const weekLogs = workoutLogs.filter(log => {
+      const logDate = new Date(log.date);
+      return logDate >= weekStart && logDate <= weekEnd;
+    });
+
+    const sortedLogs = weekLogs
       .map(workoutSession => {
         return workoutSession.performance.map(lastPerformance => {
           if (!lastPerformance || lastPerformance.sets.length === 0) return null;
@@ -43,6 +85,7 @@ export default function DiaryScreen() {
       .sort((a, b) => (b?.rawDate.getTime() || 0) - (a?.rawDate.getTime() || 0)); // Sort by most recent first
 
     const groupedByDate = sortedLogs.reduce((acc: Record<string, SummaryLog[]>, log) => {
+      if (!log) return acc;
       const dateKey = log.date;
       if (!acc[dateKey]) {
         acc[dateKey] = [];
@@ -52,7 +95,7 @@ export default function DiaryScreen() {
     }, {});
 
     return groupedByDate
-  }, [workoutLogs]);
+  }, [workoutLogs, selectedDate]);
 
   const handleViewMoreInfo = (workoutId: string, exerciseName: string) => {
 
@@ -67,6 +110,14 @@ export default function DiaryScreen() {
     setIsMoreInfoVisible(true);
   };
 
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleWeekChange = (date: Date) => {
+    setSelectedDate(date);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ActivityModal
@@ -76,6 +127,13 @@ export default function DiaryScreen() {
       />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.header}>Workout Diary</Text>
+
+        <CalendarWidget
+          selectedDate={selectedDate}
+          onDateChange={handleDateChange}
+          activeDates={activeDates}
+          onWeekChange={handleWeekChange}
+        />
 
         <View>
           <DiaryActivities data={recentWorkouts} onViewMoreInfo={handleViewMoreInfo} />
