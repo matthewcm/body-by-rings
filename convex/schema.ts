@@ -16,8 +16,30 @@ export default defineSchema({
     .index("by_exercise_name", ["exerciseName"]) // Index for looking up exercises by name
     .index("by_user", ["userId"]), // Index for user-specific exercises
 
+  // Programs (workout plans)
+  programs: defineTable({
+    title: v.string(),
+    description: v.string(),
+    numberOfPhases: v.number(),
+    isActive: v.boolean(),
+    userId: v.string(), // User who created/owns this program
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_active", ["userId", "isActive"]),
+
+  phaseTemplates: defineTable({
+    programId: v.optional(v.id("programs")), // Reference to the program this phase belongs to (optional for backward compatibility)
+    day: v.float64(),
+    phase: v.float64(),
+    title: v.string(),
+    type: v.optional(v.string()),
+  })
+    .index("by_program", ["programId"])
+    .index("by_program_phase", ["programId", "phase"]),
+
   // Table to store your workout plan/template
   workoutTemplates: defineTable({
+    programId: v.optional(v.id("programs")), // Reference to the program this template belongs to (optional for backward compatibility)
     phase: v.number(),
     day: v.number(),
     letter: v.string(),
@@ -28,6 +50,7 @@ export default defineSchema({
     tempo: v.string(), // Can override catalog defaults
     rest: v.string(), // Can override catalog defaults
   })
+    .index("by_program", ["programId"])
     .index("by_day", ["day"]) // An index makes querying by day faster
     .index("by_exercise_id", ["exerciseId"]), // Index for looking up exercises by ID
 
@@ -67,15 +90,4 @@ export default defineSchema({
   })
     .index("by_user", ["userId"]) // Allows Convex to quickly find all logs for a specific user
     .index("by_user_phase_day", ["userId", "phase", "day"]),
-
-
-
-  phaseTemplates: defineTable({
-    day: v.float64(),
-    phase: v.float64(),
-    title: v.string(),
-    type: v.optional(v.string()),
-  }),
 });
-
-

@@ -9,7 +9,9 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as migrate_program_ids from "../migrate_program_ids.js";
 import type * as phases from "../phases.js";
+import type * as programs from "../programs.js";
 import type * as workouts from "../workouts.js";
 
 import type {
@@ -20,7 +22,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  migrate_program_ids: typeof migrate_program_ids;
   phases: typeof phases;
+  programs: typeof programs;
   workouts: typeof workouts;
 }>;
 
