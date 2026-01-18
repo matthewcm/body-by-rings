@@ -45,6 +45,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.5",
     "@types/react-router-dom": "^5.3.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.25.0",
