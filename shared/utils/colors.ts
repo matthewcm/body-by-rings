@@ -8,18 +8,19 @@
  * @param   {number}  l       The lightness
  * @return  {string}          The HEX representation
  */
-function hslToHex(h, s, l) {
+function hslToHex(h: number, s: number, l: number): string {
   let r, g, b;
 
   if (s === 0) {
     r = g = b = l; // achromatic
   } else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    const hue2rgb = (p: number, q: number, t: number): number => {
+      let adjustedT = t;
+      if (adjustedT < 0) adjustedT += 1;
+      if (adjustedT > 1) adjustedT -= 1;
+      if (adjustedT < 1 / 6) return p + (q - p) * 6 * adjustedT;
+      if (adjustedT < 1 / 2) return q;
+      if (adjustedT < 2 / 3) return p + (q - p) * (2 / 3 - adjustedT) * 6;
       return p;
     };
 
@@ -30,7 +31,7 @@ function hslToHex(h, s, l) {
     b = hue2rgb(p, q, h - 1 / 3);
   }
 
-  const toHex = x => {
+  const toHex = (x: number): string => {
     const hex = Math.round(x * 255).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
@@ -47,15 +48,20 @@ function hslToHex(h, s, l) {
  * @param   {string}  hex       The hex color value
  * @return  {Array}             The HSL representation
  */
-function hexToHsl(hex) {
+function hexToHsl(hex: string): [number, number, number] {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) {
+      throw new Error(`Invalid hex color: ${hex}`);
+    }
 
     let r = parseInt(result[1], 16) / 255;
     let g = parseInt(result[2], 16) / 255;
     let b = parseInt(result[3], 16) / 255;
 
     let max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
+    let h: number = 0;
+    let s: number = 0;
+    let l = (max + min) / 2;
 
     if (max === min) {
         h = s = 0; // achromatic
@@ -82,7 +88,7 @@ function hexToHsl(hex) {
  * @param {number} endLightnessPercent - The final lightness percentage for the darkest color (e.g., 20).
  * @returns {string[]} An array of hex color strings.
  */
-export function generateHexShades(baseColorHex, steps, endLightnessPercent) {
+export function generateHexShades(baseColorHex: string, steps: number, endLightnessPercent: number): string[] {
     // 1. Convert the base hex color to HSL values (ranging 0-1).
     const [h, s, startL] = hexToHsl(baseColorHex);
     

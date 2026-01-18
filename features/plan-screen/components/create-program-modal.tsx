@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+'use client';
+
+import React, { useState, FormEvent } from 'react';
+import { Modal, View, Text, Input, Textarea, Button } from '@/lib/ui/components';
+import { X } from 'lucide-react';
 
 interface CreateProgramModalProps {
   visible: boolean;
@@ -13,24 +14,30 @@ export const CreateProgramModal = ({ visible, onClose, onCreate }: CreateProgram
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [numberOfPhases, setNumberOfPhases] = useState('3');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleCreate = async () => {
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a program title');
+      setError('Please enter a program title');
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Error', 'Please enter a program description');
+      setError('Please enter a program description');
       return;
     }
 
     const phases = parseInt(numberOfPhases);
     if (isNaN(phases) || phases < 1 || phases > 10) {
-      Alert.alert('Error', 'Please enter a valid number of phases (1-10)');
+      setError('Please enter a valid number of phases (1-10)');
       return;
     }
 
+    setLoading(true);
     try {
       await onCreate(title.trim(), description.trim(), phases);
       setTitle('');
@@ -38,161 +45,97 @@ export const CreateProgramModal = ({ visible, onClose, onCreate }: CreateProgram
       setNumberOfPhases('3');
       onClose();
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create program');
+      setError(error instanceof Error ? error.message : 'Failed to create program');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Create New Program</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <FontAwesome5 name="times" size={20} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
+    <Modal visible={visible} onClose={onClose} className="max-h-[90vh]">
+      <div className="flex flex-col max-h-[90vh]">
+        <div className="flex flex-row justify-between items-center p-5 border-b border-border">
+          <Text variant="h2" className="text-2xl font-bold">
+            Create New Program
+          </Text>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-card/50 rounded transition-colors"
+          >
+            <X className="w-5 h-5 text-text" />
+          </button>
+        </div>
 
-          <ScrollView style={styles.content}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Program Title</Text>
-              <TextInput
-                style={styles.input}
+        <form onSubmit={handleCreate} className="flex-1 overflow-auto p-5">
+          <div className="space-y-5">
+            <div>
+              <Text className="text-base font-semibold mb-2 block">Program Title</Text>
+              <Input
                 value={title}
-                onChangeText={setTitle}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Body By Rings Program"
-                placeholderTextColor={THEME.placeholder}
+                required
+                className="w-full"
               />
-            </View>
+            </div>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
+            <div>
+              <Text className="text-base font-semibold mb-2 block">Description</Text>
+              <Textarea
                 value={description}
-                onChangeText={setDescription}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe your workout program..."
-                placeholderTextColor={THEME.placeholder}
-                multiline
-                numberOfLines={4}
+                rows={4}
+                required
+                className="w-full"
               />
-            </View>
+            </div>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Number of Phases</Text>
-              <TextInput
-                style={styles.input}
+            <div>
+              <Text className="text-base font-semibold mb-2 block">Number of Phases</Text>
+              <Input
+                type="number"
                 value={numberOfPhases}
-                onChangeText={setNumberOfPhases}
+                onChange={(e) => setNumberOfPhases(e.target.value)}
                 placeholder="3"
-                placeholderTextColor={THEME.placeholder}
-                keyboardType="number-pad"
+                min="1"
+                max="10"
+                required
+                className="w-full"
               />
-              <Text style={styles.hint}>Enter a number between 1 and 10</Text>
-            </View>
-          </ScrollView>
+              <Text className="text-xs text-placeholder mt-1">
+                Enter a number between 1 and 10
+              </Text>
+            </div>
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
-              <Text style={styles.createButtonText}>Create Program</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+            {error && (
+              <div className="p-3 rounded-md bg-error/10 border border-error/20">
+                <Text className="text-error text-sm">{error}</Text>
+              </div>
+            )}
+          </div>
+        </form>
+
+        <div className="flex flex-row gap-3 p-5 border-t border-border">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            onClick={handleCreate}
+            disabled={loading}
+            className="flex-1"
+          >
+            {loading ? 'Creating...' : 'Create Program'}
+          </Button>
+        </div>
+      </div>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
-    backgroundColor: THEME.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: THEME.text,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  content: {
-    padding: 20,
-  },
-  field: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: THEME.background,
-    borderRadius: 8,
-    padding: 12,
-    color: THEME.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  hint: {
-    fontSize: 12,
-    color: THEME.placeholder,
-    marginTop: 4,
-  },
-  actions: {
-    flexDirection: 'row',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: THEME.border,
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: THEME.background,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: THEME.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  createButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: THEME.primary,
-    alignItems: 'center',
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

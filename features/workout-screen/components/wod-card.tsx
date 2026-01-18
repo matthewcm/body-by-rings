@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { THEME } from '@/shared/theme/colours';
+import { View, Text, Card } from '@/lib/ui/components';
+import { Clock } from 'lucide-react';
 
 interface WodCardProps {
   title: string;
@@ -11,49 +13,32 @@ interface WodCardProps {
 
 export const WodCard = ({ title, timeCap, repScheme, exercises }: WodCardProps) => {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{title}</Text>
-          {repScheme && <Text style={styles.repScheme}>{repScheme}</Text>}
-        </View>
+    <Card className="mx-4 my-2.5 p-4 shadow-lg">
+      <div className="flex flex-row justify-between items-start mb-3">
+        <div>
+          <Text variant="h3" className="text-lg font-extrabold uppercase">
+            {title}
+          </Text>
+          {repScheme && (
+            <Text className="text-primary text-base font-bold mt-0.5 font-mono">
+              {repScheme}
+            </Text>
+          )}
+        </div>
         {timeCap && (
-          <View style={styles.timeCapBadge}>
-            <Text style={styles.timeCapText}>⏱ {timeCap}</Text>
-          </View>
+          <div className="bg-error/20 px-2.5 py-1 rounded-lg border border-error">
+            <Text className="text-error font-bold text-xs">⏱ {timeCap}</Text>
+          </div>
         )}
-      </View>
+      </div>
       
-      <View style={styles.exerciseList}>
+      <div className="border-t border-border pt-3 space-y-1">
         {exercises.map((ex, i) => (
-          <View key={i} style={styles.exerciseItem}>
-            <Text style={styles.exerciseText}>• {ex}</Text>
-          </View>
+          <div key={i} className="my-1">
+            <Text className="text-text text-[15px] opacity-90">• {ex}</Text>
+          </div>
         ))}
-      </View>
-    </View>
+      </div>
+    </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: THEME.card,
-    marginHorizontal: 16,
-    marginVertical: 10,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-  },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  title: { color: THEME.text, fontSize: 18, fontWeight: '800', textTransform: 'uppercase' },
-  repScheme: { color: THEME.primary, fontSize: 16, fontWeight: '700', marginTop: 2, fontFamily: 'monospace' },
-  timeCapBadge: { backgroundColor: '#ef444420', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: '#ef4444' },
-  timeCapText: { color: '#ef4444', fontWeight: 'bold', fontSize: 12 },
-  exerciseList: { borderTopWidth: 1, borderTopColor: THEME.border, paddingTop: 12 },
-  exerciseItem: { marginVertical: 4 },
-  exerciseText: { color: THEME.text, fontSize: 15, opacity: 0.9 },
-});

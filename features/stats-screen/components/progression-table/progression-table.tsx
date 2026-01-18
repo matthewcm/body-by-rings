@@ -1,5 +1,7 @@
-import { THEME } from '@/shared/theme/colours';
-import { View, Text, StyleSheet } from 'react-native';
+'use client';
+
+import React from 'react';
+import { View, Text, Card } from '@/lib/ui/components';
 
 export const ProgressionTable = ({ data }: {
   data?: {
@@ -11,56 +13,45 @@ export const ProgressionTable = ({ data }: {
   }[]
 }) => {
   if (!data || data.length === 0) {
-    return <Text style={styles.tablePlaceholder}>No logs found for this exercise in this phase.</Text>;
+    return (
+      <Text className="text-placeholder italic py-10 text-center">
+        No logs found for this exercise in this phase.
+      </Text>
+    );
   }
 
   return (
-    <View style={styles.tableContainer}>
+    <div className="w-full overflow-x-auto">
       {/* Header */}
-      <View style={[styles.tableRow, styles.tableHeader]}>
-        <Text style={[styles.tableCell, styles.headerText, { flex: 2 }]}>Date</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Sets</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Max Reps</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Max Intensity</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Volume</Text>
-      </View>
+      <div className="flex flex-row bg-[#333333] rounded-t-lg">
+        <Text className="flex-[2] text-text text-center py-3 text-xs font-bold text-primary">
+          Date
+        </Text>
+        <Text className="flex-1 text-text text-center py-3 text-xs font-bold text-primary">
+          Sets
+        </Text>
+        <Text className="flex-1 text-text text-center py-3 text-xs font-bold text-primary">
+          Max Reps
+        </Text>
+        <Text className="flex-1 text-text text-center py-3 text-xs font-bold text-primary">
+          Max Intensity
+        </Text>
+        <Text className="flex-1 text-text text-center py-3 text-xs font-bold text-primary">
+          Volume
+        </Text>
+      </div>
       {/* Rows */}
-      {data.map((row, index) => (
-        <View key={index} style={styles.tableRow}>
-          <Text style={[styles.tableCell, { flex: 2 }]}>{row.date}</Text>
-          <Text style={styles.tableCell}>{row.sets}</Text>
-          <Text style={styles.tableCell}>{row.maxReps}</Text>
-          <Text style={styles.tableCell}>{row.maxIntensity}</Text>
-          <Text style={styles.tableCell}>{row.totalVolume}</Text>
-        </View>
-      ))}
-    </View>
+      <div className="divide-y divide-border">
+        {data.map((row, index) => (
+          <div key={index} className="flex flex-row py-3 border-b border-border">
+            <Text className="flex-[2] text-text text-center text-xs">{row.date}</Text>
+            <Text className="flex-1 text-text text-center text-xs">{row.sets}</Text>
+            <Text className="flex-1 text-text text-center text-xs">{row.maxReps}</Text>
+            <Text className="flex-1 text-text text-center text-xs">{row.maxIntensity || '-'}</Text>
+            <Text className="flex-1 text-text text-center text-xs">{row.totalVolume || '-'}</Text>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
-
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  container: { padding: 16 },
-  header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-  subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 16 },
-  card: { backgroundColor: THEME.card, borderRadius: 12, padding: 16 },
-  chartTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.text, marginBottom: 20, textAlign: 'center' },
-  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 24, gap: 8 },
-  chip: { backgroundColor: THEME.card, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: THEME.primary },
-  chipSelected: { backgroundColor: THEME.primary },
-  chipText: { color: THEME.primary },
-  chipTextSelected: { color: THEME.background, fontWeight: 'bold' },
-  phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
-  phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  phaseButtonSelected: { backgroundColor: THEME.primary },
-  phaseButtonText: { color: THEME.placeholder, fontWeight: 'bold', fontSize: 16 },
-  phaseButtonTextSelected: { color: THEME.background },
-  tableContainer: { width: '100%' },
-  tableHeader: { backgroundColor: '#333333', borderTopLeftRadius: 8, borderTopRightRadius: 8 },
-  tableRow: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border },
-  tableCell: { flex: 1, color: THEME.text, textAlign: 'center', fontSize: 12 },
-  headerText: { fontWeight: 'bold', color: THEME.primary },
-  tablePlaceholder: { color: THEME.placeholder, fontStyle: 'italic', paddingVertical: 40, textAlign: 'center' },
-});
-

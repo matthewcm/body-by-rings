@@ -1,14 +1,14 @@
 export const THEME = {
-  background: '#121212',
-  card: '#1E1E1E',
-  text: '#E0E0E0',
-  primary: '#5D5FEF',
-  secondary: '#4b5563',
+  background: '#0f0b1e',
+  card: '#1a1432',
+  text: '#e8e6ed',
+  primary: '#7c3aed',
+  secondary: '#5b21b6',
   success: '#34C759',
-  error: '#CF6679',
-  border: '#333333',
-  placeholder: '#8E8E93',
-  subtleText: '#A0A0A0',
-  activityIndicator: '#BB86FC',
-  surface: '#bb87fc'
+  error: '#ef4444',
+  border: '#2d1b4e',
+  placeholder: '#8b7ba8',
+  subtleText: '#a78bfa',
+  activityIndicator: '#a78bfa',
+  surface: '#8b5cf6'
 };

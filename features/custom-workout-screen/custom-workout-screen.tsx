@@ -1,140 +1,135 @@
-import { api } from "@/convex/_generated/api";
+'use client';
+
+import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
-import { THEME } from '@/shared/theme/colours';
 import { isNotNull } from '@/shared/utils/array';
-import { useAction, useMutation } from "convex/react";
-import * as ImagePicker from 'expo-image-picker';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useAction, useMutation } from 'convex/react';
+import { useHistory } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View, Button, ActivityIndicator } from '@/lib/ui/components';
+import { Camera, Image, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
 import { NewExerciseCard } from './components/new-exercise-card';
 
-const GALLERY = 'gallery'
-const CAMERA = 'camera'
-
-type SCAN_TYPE = 'gallery' | 'camera'
+type SCAN_TYPE = 'gallery' | 'camera';
 
 export default function CustomWorkoutScreen() {
-  const router = useRouter();
-  const { phase, day } = useLocalSearchParams<{ phase: string, day: string }>();
+  const history = useHistory();
+  const phase = '0';
+  const day = '0';
 
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
-  const [workoutSummary, setWorkoutSummary] = useState<{ name?: string, summary?: string }[]>([]);
-  const [templates, setTemplates] = useState<{ _id: Id<'workoutTemplates'>, exerciseName: string }[]>([]);
+  const [workoutSummary, setWorkoutSummary] = useState<{ name?: string; summary?: string }[]>([]);
+  const [templates, setTemplates] = useState<{ _id: Id<'workoutTemplates'>; exerciseName: string }[]>([]);
   const [wodBlocks, setWodBlocks] = useState<any[]>([]);
 
   const logWorkout = useMutation(api.workouts.log_workout);
   const createCustomExercise = useMutation(api.workouts.create_custom_workout);
-
   const exercisesForDay = useMemo(() => templates || [], [templates]);
   const scanImage = useAction(api.ai.scan_workout_image);
 
-
-  const handleGetWodImage = async (type: SCAN_TYPE) => {
-    if (type === GALLERY) {
-      // 1. Request Permissions
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert("Permission Denied", "We need access to gallery.");
-        return;
+  const handleGetWodImage = async (type: SCAN_TYPE): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      if (type === 'camera') {
+        input.capture = 'environment';
       }
+      
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
+        }
 
-      const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, base64: true, quality: 0.6 });
-      if (result.canceled || !result.assets[0].base64) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(',')[1]; // Remove data:image/...;base64, prefix
+          resolve(base64Data);
+        };
+        reader.readAsDataURL(file);
+      };
+      
+      input.click();
+    });
+  };
 
-      return result
-    }
-    if (type === CAMERA) {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert("Permission Denied", "We need camera access to scan the WOD board.");
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        base64: true,
-        quality: 0.7,
-      });
-      return result
-    }
-  }
-
-  // --- AI SCAN LOGIC ---
   const handleScanWOD = async (type: SCAN_TYPE) => {
-
-    const result = await handleGetWodImage(type)
-    if (!result || result.canceled || !result.assets[0].base64) return;
-
     setIsScanning(true);
     try {
-      const parsedData = await scanImage({ base64Image: result.assets[0].base64 });
-      setWodBlocks(parsedData); // Store the WOD grouping logic
+      const base64Image = await handleGetWodImage(type);
+      if (!base64Image) {
+        setIsScanning(false);
+        return;
+      }
 
-      // Also populate the actual loggable templates for each exercise found in the WODs
+      const parsedData = await scanImage({ base64Image });
+      setWodBlocks(parsedData);
+
       const allExercises: any[] = [];
       parsedData.forEach((block: any) => {
         block.exercises.forEach((name: string) => {
           allExercises.push({
             _id: `ex-${uuidv4()}` as Id<'workoutTemplates'>,
             exerciseName: name,
-            parentWod: block.title // Optional: track which WOD it belongs to
+            parentWod: block.title,
           });
         });
       });
 
-
       setTemplates(prev => [...prev, ...allExercises]);
-
     } catch (error) {
       console.error(error);
-      Alert.alert("Scan Failed", "AI could not structure the CrossFit workout.");
+      alert('AI could not structure the CrossFit workout.');
     } finally {
       setIsScanning(false);
     }
   };
 
-  // --- EXISTING HANDLERS ---
   const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => {
-    const exercise = templates.find((t) => t._id === exerciseId)
-    setPerformanceLog(prev => ({ ...prev, [exerciseId]: {
-      ... data ,
-      exerciseName: data?.exerciseName || exercise?.exerciseName || ''
-    } }));
-    setTemplates(prev => prev.map(t => t._id === exerciseId ? { 
+    const exercise = templates.find((t) => t._id === exerciseId);
+    setPerformanceLog(prev => ({
+      ...prev,
+      [exerciseId]: {
+        ...data,
+        exerciseName: data?.exerciseName || exercise?.exerciseName || ''
+      }
+    }));
+    setTemplates(prev => prev.map(t => t._id === exerciseId ? {
       ...t,
       exerciseName: data?.exerciseName || exercise?.exerciseName || ''
-      } : t));
-  }
+    } : t));
+  };
 
   const handleDeleteExercise = (exerciseId: Id<'workoutTemplates'>) => {
     setPerformanceLog(prev => {
       const newLog = { ...prev };
       delete newLog[exerciseId];
       return newLog;
-    })
+    });
     setTemplates(prev => prev.filter(ex => ex._id !== exerciseId));
-  }
+  };
 
   const handleCreateNewExercise = () => {
     const newExId = `ex-${uuidv4()}` as Id<'workoutTemplates'>;
-    setTemplates(prev => ([...prev, { _id: newExId, exerciseName: '' }]))
-  }
+    setTemplates(prev => ([...prev, { _id: newExId, exerciseName: '' }]));
+  };
 
   const handleFinishPress = () => {
     const summary = Object.values(performanceLog).map(p => {
       if (!p.sets || p.sets.length === 0) return null;
       const setsCount = p.sets.length;
       const avgReps = (p.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0) / setsCount).toFixed(1);
-      const volumeReps = p.sets.reduce((sum, s) => sum + parseInt(s.reps), 0);
+      const volumeReps = p.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
       const setIntensity = p.sets.find((s) => s.intensity)?.intensity;
       return {
         name: p.exerciseName,
@@ -166,30 +161,38 @@ export default function CustomWorkoutScreen() {
       for (const ex of exercisesForDay) {
         await createCustomExercise({
           exerciseName: ex.exerciseName,
-          phase: 0, day: 0, targetReps: '8', targetSets: 3,
-          targetIntensity: 'Medium', letter: '', tempo: '2-0-2', rest: '60s',
+          phase: 0,
+          day: 0,
+          targetReps: '8',
+          targetSets: 3,
+          targetIntensity: 'Medium',
+          letter: '',
+          tempo: '2-0-2',
+          rest: '60s',
         });
       }
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
-      router.navigate({ pathname: '(home)' });
+      history.push('/');
     } catch (error) {
-      Alert.alert("Error", "Could not save workout.");
+      alert('Could not save workout.');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{
-        title: 'Log Workout',
-        headerRight: () => (
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinishPress} disabled={isSaving}>
-            <Text style={styles.finishButtonText}>Finish</Text>
-          </TouchableOpacity>
-        ),
-      }} />
+    <div className="screen-container w-full">
+      <div className="flex flex-row justify-end px-5 py-4 mb-4">
+        <Button
+          variant="primary"
+          onClick={handleFinishPress}
+          disabled={isSaving}
+          className="px-5 py-2 rounded-full"
+        >
+          Finish
+        </Button>
+      </div>
 
       <WorkoutSummaryModal
         onConfirm={confirmAndSaveWorkout}
@@ -200,38 +203,40 @@ export default function CustomWorkoutScreen() {
         withMuscleMap={false}
       />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        {/* AI Scanner Button */}
-        <View style={styles.scanRow}>
-          <View style={styles.scannerContainer}>
-            <TouchableOpacity
-              style={[styles.scanButton, isScanning && { opacity: 0.7 }]}
-              onPress={() => handleScanWOD(CAMERA)}
-              disabled={isScanning}
-            >
-              {isScanning ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.finishButtonText}>📸 Scan WOD Board</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-          <View style={styles.scannerContainer}>
-            <TouchableOpacity
-              style={[styles.scanButton, isScanning && { opacity: 0.7 }]}
-              onPress={() => handleScanWOD(GALLERY)}
-              disabled={isScanning}
-            >
-              {isScanning ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.finishButtonText}>📸 WOD from gallery</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+      <View className="px-5 pb-5">
+        <div className="flex flex-row gap-2 mb-5 border-b border-border pb-5">
+          <Button
+            variant="secondary"
+            onClick={() => handleScanWOD('camera')}
+            disabled={isScanning}
+            className="flex-1 flex flex-row items-center justify-center gap-2"
+          >
+            {isScanning ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <>
+                <Camera className="w-4 h-4" />
+                <Text className="font-bold">Scan WOD Board</Text>
+              </>
+            )}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => handleScanWOD('gallery')}
+            disabled={isScanning}
+            className="flex-1 flex flex-row items-center justify-center gap-2"
+          >
+            {isScanning ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <>
+                <Image className="w-4 h-4" />
+                <Text className="font-bold">WOD from gallery</Text>
+              </>
+            )}
+          </Button>
+        </div>
 
-        {/* 1. Show the CrossFit "Summary" Cards first */}
         {wodBlocks.map((block, idx) => (
           <WodCard
             key={idx}
@@ -242,50 +247,29 @@ export default function CustomWorkoutScreen() {
           />
         ))}
 
-        <Text style={styles.sectionHeader}>Log Performance</Text>
+        <Text className="text-center my-4 text-text text-lg font-extrabold uppercase">
+          Log Performance
+        </Text>
 
-        {/* 2. Show the loggable Exercise Cards below */}
         {exercisesForDay.map(ex => (
           <NewExerciseCard
             key={ex._id}
             exercise={ex}
-            performanceData={performanceLog[ex._id]}
+            performanceData={performanceLog[ex._id] || { sets: [], exerciseName: ex.exerciseName }}
             onUpdate={handleUpdateExercise}
             onDelete={handleDeleteExercise}
           />
         ))}
 
-
-        <TouchableOpacity style={styles.createNewExerciseButton} onPress={handleCreateNewExercise}>
-          <Text style={styles.finishButtonText}>+ Create new exercise</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        <Button
+          variant="primary"
+          onClick={handleCreateNewExercise}
+          className="mx-5 mt-5 py-4 rounded-xl flex flex-row items-center justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          <Text className="font-bold">Create new exercise</Text>
+        </Button>
+      </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  scannerContainer: { padding: 20, borderBottomWidth: 1, borderBottomColor: THEME.border },
-  sectionHeader: { textAlign: 'center', margin: 16, color: THEME.text, fontSize: 18, fontWeight: '800', textTransform: 'uppercase' },
-  scanRow: { flexDirection: 'row', gap: '5', width: '100%', flex: 1, justifyContent: 'center' },
-  scanButton: {
-    flex: 1,
-    backgroundColor: THEME.secondary,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  createNewExerciseButton: {
-    backgroundColor: THEME.primary,
-    paddingVertical: 15,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 20
-  },
-  finishButton: { backgroundColor: THEME.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginRight: 20 },
-  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-});

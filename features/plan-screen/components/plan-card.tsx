@@ -1,29 +1,36 @@
+'use client';
+
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { View, Text, Card } from '@/lib/ui/components';
+import { Shield, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
+interface PlanCardProps {
+  title: string;
+  description: string;
+  isActive: boolean;
+}
 
-export const PlanCard = ({ title, description, isActive }: {
-  title: string,
-  description: string,
-  isActive: boolean
-}) => (
-    <View style={[styles.card, isActive && styles.activeCard]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <FontAwesome5 name="shield-alt" size={20} color={THEME.primary} />
-            <Text style={styles.cardTitle}>{title}</Text>
-        </View>
-        <Text style={styles.cardDescription}>{description}</Text>
-        {isActive && <Text style={styles.activeBadge}>Active</Text>}
+export const PlanCard = ({ title, description, isActive }: PlanCardProps) => (
+  <Card
+    className={cn(
+      'p-4 mb-4 relative',
+      isActive && 'border-2 border-primary'
+    )}
+  >
+    <View className="flex flex-row items-center mb-2">
+      <Shield className="w-5 h-5 text-primary mr-3" />
+      <Text variant="h3" className="text-lg font-bold">
+        {title}
+      </Text>
     </View>
+    <Text className="text-subtle-text text-sm mt-1 leading-5">
+      {description}
+    </Text>
+    {isActive && (
+      <Text className="text-primary font-bold absolute top-4 right-4">
+        Active
+      </Text>
+    )}
+  </Card>
 );
-
-const styles = StyleSheet.create({
-    card: { backgroundColor: THEME.card, borderRadius: 12, padding: 16, marginBottom: 16 },
-    activeCard: { borderWidth: 2, borderColor: THEME.primary },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.text, marginLeft: 12 },
-    cardDescription: { fontSize: 14, color: THEME.subtleText, marginTop: 4, lineHeight: 20 },
-    activeBadge: { color: THEME.primary, fontWeight: 'bold', position: 'absolute', top: 16, right: 16 },
-});
-
