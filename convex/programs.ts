@@ -254,10 +254,12 @@ export const update_workout_template = mutation({
       throw new Error("Template not found");
     }
 
-    // Verify the program belongs to the user
-    const program = await ctx.db.get(template.programId);
-    if (!program || program.userId !== identity.subject) {
-      throw new Error("Unauthorized");
+    // Verify the program belongs to the user (if template has a programId)
+    if (template.programId) {
+      const program = await ctx.db.get(template.programId);
+      if (!program || program.userId !== identity.subject) {
+        throw new Error("Unauthorized");
+      }
     }
 
     const update: any = {};

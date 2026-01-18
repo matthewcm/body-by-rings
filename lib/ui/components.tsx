@@ -75,25 +75,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = 'Input';
 
-// Textarea Component
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
-
-export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <textarea
-        ref={ref}
-        className={cn(
-          'flex min-h-[80px] w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-text placeholder:text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-          className
-        )}
-        {...props}
-      />
-    );
-  }
-);
-Textarea.displayName = 'Textarea';
-
 // Text Component
 interface TextProps extends React.HTMLAttributes<HTMLParagraphElement> {
   variant?: 'h1' | 'h2' | 'h3' | 'body' | 'caption';
@@ -110,10 +91,10 @@ export const Text = React.forwardRef<HTMLParagraphElement, TextProps>(
       caption: 'text-sm text-subtle-text',
     };
     
-    const Component = variant.startsWith('h') ? `h${variant.slice(1)}` as keyof JSX.IntrinsicElements : 'p';
+    const tagName = variant.startsWith('h') ? `h${variant.slice(1)}` : 'p';
     
     return React.createElement(
-      Component,
+      tagName as keyof React.JSX.IntrinsicElements,
       {
         ref,
         className: cn(baseClasses, variantClasses[variant], className),
@@ -206,27 +187,60 @@ export const ActivityIndicator: React.FC<ActivityIndicatorProps> = ({
 };
 
 // Modal Component
-interface ModalProps {
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   visible: boolean;
-  onClose?: () => void;
-  children: React.ReactNode;
-  className?: string;
+  onClose: () => void;
 }
 
-export const Modal: React.FC<ModalProps> = ({ visible, onClose, children, className }) => {
+export const Modal: React.FC<ModalProps> = ({
+  visible,
+  onClose,
+  className,
+  children,
+  ...props
+}) => {
+  React.useEffect(() => {
+    if (visible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
     >
+      {/* Backdrop */}
       <div
-        className={cn('bg-card rounded-lg max-w-md w-full max-h-[90vh] overflow-auto', className)}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal Content */}
+      <div
+        className={cn(
+          'relative z-10 w-full rounded-lg border border-border bg-card shadow-lg',
+          className
+        )}
         onClick={(e) => e.stopPropagation()}
+        {...props}
       >
         {children}
       </div>
     </div>
   );
 };
+Modal.displayName = 'Modal';

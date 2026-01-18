@@ -1,17 +1,17 @@
 'use client';
 
 import { api } from '@/convex/_generated/api';
+import { Button, Card, Text, View } from '@/lib/ui/components';
+import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/nextjs';
-import { Edit, X, CalendarX, Sprout } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
-import React, { useEffect, useState } from 'react';
-import { ScrollView, Text, View, Card, Button } from '@/lib/ui/components';
+import { CalendarX, Edit, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ActionButton } from './components/action-button';
 import { ConfirmModal } from './components/confirm-modal';
 import { CreateProgramModal } from './components/create-program-modal';
 import { EditProgramModal } from './components/edit-program-modal';
 import { PlanCard } from './components/plan-card';
-import { cn } from '@/lib/utils';
 
 export default function PlanScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,8 +64,8 @@ export default function PlanScreen() {
   };
 
   return (
-    <ScrollView className="min-h-screen bg-background">
-      <View className="container mx-auto px-4 py-8">
+    <div className="screen-container w-full">
+      <View className="w-full flex flex-col">
         <Text variant="h1" className="text-3xl font-bold text-center mb-6">
           Workout Plan
         </Text>
@@ -87,8 +87,8 @@ export default function PlanScreen() {
                 onClick={() => setShowEditModal(true)}
                 className="flex-1 flex flex-row items-center justify-center gap-2 border border-primary"
               >
-                <Edit className="w-4 h-4 text-primary" />
-                <Text className="text-primary font-semibold text-sm">Edit Program</Text>
+                <Edit className="w-4 h-4 text-background" />
+                <Text className="text-background font-semibold text-sm">Edit Program</Text>
               </Button>
               
               <Button
@@ -125,17 +125,8 @@ export default function PlanScreen() {
             </Text>
             <div className="space-y-3 mb-6">
               {allPrograms.map((program) => (
-                <button
+                <div
                   key={program._id}
-                  onClick={async () => {
-                    if (!program.isActive) {
-                      try {
-                        await activateProgram({ programId: program._id });
-                      } catch (error) {
-                        console.error('Error activating program:', error);
-                      }
-                    }
-                  }}
                   className={cn(
                     'w-full text-left p-4 rounded-xl border transition-colors',
                     program.isActive
@@ -172,11 +163,11 @@ export default function PlanScreen() {
                       }}
                       className="mt-3 px-3 py-2 text-sm border border-primary flex flex-row items-center gap-1.5"
                     >
-                      <span className="text-primary">✓</span>
-                      <Text className="text-primary font-semibold text-sm">Switch to</Text>
+                      <span className="text-white ">✓</span>
+                      <Text className="text-white font-semibold text-sm">Switch to</Text>
                     </Button>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </>
@@ -236,6 +227,6 @@ export default function PlanScreen() {
         onConfirm={handleDeactivate}
         onCancel={() => setShowDisableConfirm(false)}
       />
-    </ScrollView>
+    </div>
   );
 }

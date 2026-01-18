@@ -3,7 +3,7 @@
 import { api } from '@/convex/_generated/api';
 import { useQuery } from 'convex/react';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from '@/lib/ui/components';
+import { Text, View } from '@/lib/ui/components';
 import { ActivityModal } from './components/activity-modal';
 import { CalendarWidget } from './components/calendar-widget';
 import { DiaryActivities } from './components/diary-table';
@@ -111,8 +111,8 @@ export default function DiaryScreen() {
   };
 
   return (
-    <ScrollView className="min-h-screen bg-background">
-      <View className="container mx-auto px-4 py-8">
+    <div className="screen-container w-full">
+      <View className="w-full flex flex-col">
         <Text variant="h1" className="text-3xl font-bold text-center mb-6">
           Workout Diary
         </Text>
@@ -133,13 +133,13 @@ export default function DiaryScreen() {
         <View className="mt-6">
           <DiaryActivities data={recentWorkouts} onViewMoreInfo={handleViewMoreInfo} />
         </View>
-      </View>
 
-      <ActivityModal
-        isVisible={isMoreInfoVisible}
-        exercise={activeExercise}
-        onClose={() => setIsMoreInfoVisible(false)}
-      />
-    </ScrollView>
+        <ActivityModal
+          isVisible={isMoreInfoVisible}
+          exercise={activeExercise}
+          onClose={() => setIsMoreInfoVisible(false)}
+        />
+      </View>
+    </div>
   );
 }

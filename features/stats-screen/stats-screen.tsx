@@ -2,14 +2,14 @@
 
 import { api } from '@/convex/_generated/api';
 import { ProgressionTable } from '@/features/stats-screen/components/progression-table/progression-table';
-import { ActivityIndicator, Button, Card, Input, Modal, ScrollView, Text, View } from '@/lib/ui/components';
+import { ActivityIndicator, Button, Card, Input, Modal, Text, View } from '@/lib/ui/components';
 import { cn } from '@/lib/utils';
 import { THEME } from '@/shared/theme/colours';
 import { generateHexShades } from '@/shared/utils/colors';
 import { useMutation, useQuery } from 'convex/react';
 import { Edit, Save, Search, Star, X, XCircle } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Body from 'react-body-highlighter';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Body, { type Muscle } from 'react-body-highlighter';
 
 // Normalize exercise name: lowercase and remove pluralization
 const normalizeExerciseName = (name: string): string => {
@@ -29,7 +29,7 @@ export default function StatsScreen() {
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState('');
-  const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
+  const [selectedMuscles, setSelectedMuscles] = useState<Muscle[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'standard' | 'custom'>('all');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -38,14 +38,16 @@ export default function StatsScreen() {
   
   const updateExerciseName = useMutation(api.workouts.update_custom_exercise_name);
   const updateExerciseMuscles = useMutation(api.workouts.update_custom_exercise_muscles);
+
+  console.log(selectedMuscles)
   
   // Organize muscles by body region
   const muscleGroups = useMemo(() => {
     return {
-      'Upper Body': ['chest', 'deltoids', 'triceps', 'biceps', 'upper-back', 'trapezius', 'forearm', 'hands'],
+      'Upper Body': ['chest', 'front-deltoids', 'back-deltoids', 'triceps', 'biceps', 'upper-back', 'trapezius', 'forearm', ],
       'Core': ['abs', 'obliques', 'lower-back'],
       'Lower Body': ['quadriceps', 'hamstring', 'calves', 'gluteal', 'adductors', 'tibialis'],
-      'Other': ['neck', 'head', 'feet', 'ankles', 'knees'],
+      'Other': ['neck', 'head', 'ankles', 'knees'],
     };
   }, []);
   
@@ -242,8 +244,8 @@ export default function StatsScreen() {
   }
 
   return (
-    <ScrollView className="min-h-screen bg-background">
-      <View className="container mx-auto px-4 py-8">
+    <div className="screen-container w-full">
+      <View className="w-full flex flex-col">
         <Text variant="h1" className="text-3xl font-bold text-center mb-4">
           Progression
         </Text>
@@ -307,9 +309,9 @@ export default function StatsScreen() {
 
         {/* Exercise List */}
         {filteredExercises.length > 0 ? (
-          <div className="flex flex-row mb-6 h-[400px] border border-border rounded-xl overflow-hidden bg-card">
+          <div className="flex flex-col sm:flex-row mb-6 h-auto sm:h-[400px] border border-border rounded-xl overflow-hidden bg-card">
             {/* Alphabetical Index */}
-            <div className="w-8 border-r border-border bg-background flex flex-col">
+            <div className="w-full sm:w-8 border-r-0 sm:border-r border-b sm:border-b-0 border-border bg-background flex flex-row sm:flex-col overflow-x-auto sm:overflow-x-visible overflow-y-visible sm:overflow-y-auto">
               {Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).map(letter => (
                 <button
                   key={letter}
@@ -330,7 +332,7 @@ export default function StatsScreen() {
             {/* Exercise List */}
             <div
               ref={exerciseListRef}
-              className="flex-1 overflow-y-auto p-3"
+              className="flex-1 overflow-y-auto p-3 w-full"
             >
               {availableLetters.map(letter => (
                 <div key={letter} id={`letter-${letter}`} className="mb-4">
@@ -411,7 +413,7 @@ export default function StatsScreen() {
                     )}
                   </div>
                   {isEditing && (
-                    <div className="flex flex-row gap-2 justify-end">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end w-full sm:w-auto">
                       <Button
                         variant="destructive"
                         size="sm"
@@ -479,10 +481,11 @@ export default function StatsScreen() {
                 )}
 
                 {!isEditing && selectedMuscles.length > 0 && (
-                  <div className="mb-5 flex flex-row justify-around items-center py-5 px-5 w-full">
-                    <div className="flex-1 flex items-center justify-center">
+                  <div className="mb-5 flex flex-col sm:flex-row justify-around items-center gap-4 sm:gap-0 py-5 px-5 w-full">
+                    <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
                       <Body
-                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles as any }]}
+
+                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles }]}
                         type="anterior"
                         bodyColor="#dfdfdf"
                         highlightedColors={generateHexShades(THEME.primary, 6, 20)}
@@ -490,9 +493,9 @@ export default function StatsScreen() {
                         svgStyle={{ width: '100%', height: 'auto' }}
                       />
                     </div>
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
                       <Body
-                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles as any }]}
+                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles }]}
                         type="posterior"
                         bodyColor="#dfdfdf"
                         highlightedColors={generateHexShades(THEME.primary, 6, 20)}
@@ -544,6 +547,6 @@ export default function StatsScreen() {
           </div>
         </Modal>
       </View>
-    </ScrollView>
+    </div>
   );
 }

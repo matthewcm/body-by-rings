@@ -6,9 +6,9 @@ import { WorkoutSummaryModal } from '@/features/workout-screen/components/workou
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { isNotNull } from '@/shared/utils/array';
 import { useAction, useMutation } from 'convex/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useHistory } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View, Button, ActivityIndicator } from '@/lib/ui/components';
+import { Text, View, Button, ActivityIndicator } from '@/lib/ui/components';
 import { Camera, Image, Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
@@ -17,10 +17,9 @@ import { NewExerciseCard } from './components/new-exercise-card';
 type SCAN_TYPE = 'gallery' | 'camera';
 
 export default function CustomWorkoutScreen() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const phase = searchParams.get('phase') || '0';
-  const day = searchParams.get('day') || '0';
+  const history = useHistory();
+  const phase = '0';
+  const day = '0';
 
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -40,7 +39,9 @@ export default function CustomWorkoutScreen() {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
-      input.capture = type === 'camera' ? 'environment' : undefined;
+      if (type === 'camera') {
+        input.capture = 'environment';
+      }
       
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -172,7 +173,7 @@ export default function CustomWorkoutScreen() {
       }
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
-      router.push('/');
+      history.push('/');
     } catch (error) {
       alert('Could not save workout.');
     } finally {
@@ -181,8 +182,8 @@ export default function CustomWorkoutScreen() {
   };
 
   return (
-    <ScrollView className="min-h-screen bg-background pb-5">
-      <div className="flex flex-row justify-end px-5 py-4">
+    <div className="screen-container w-full">
+      <div className="flex flex-row justify-end px-5 py-4 mb-4">
         <Button
           variant="primary"
           onClick={handleFinishPress}
@@ -269,6 +270,6 @@ export default function CustomWorkoutScreen() {
           <Text className="font-bold">Create new exercise</Text>
         </Button>
       </View>
-    </ScrollView>
+    </div>
   );
 }

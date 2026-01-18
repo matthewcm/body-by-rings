@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   trailingSlash: true,
+  outputFileTracingRoot: require('path').join(__dirname),
   images: {
     unoptimized: true, // Required for static export
   },

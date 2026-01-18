@@ -2,7 +2,7 @@
 
 import { useUser, useClerk } from '@clerk/nextjs';
 import React, { useState, useEffect, FormEvent } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Input, Button, Card } from '@/lib/ui/components';
+import { View, Text, ActivityIndicator, Input, Button, Card } from '@/lib/ui/components';
 import { ProfileRow } from './components/profile-row';
 
 export default function ProfileScreen() {
@@ -63,8 +63,8 @@ export default function ProfileScreen() {
   const accountCreated = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
 
   return (
-    <ScrollView className="min-h-screen bg-background">
-      <View className="container mx-auto px-4 py-8">
+    <div className="screen-container w-full">
+      <View className="w-full flex flex-col">
         <Text variant="h1" className="text-3xl font-bold text-center mb-6">
           Manage Account
         </Text>
@@ -166,6 +166,6 @@ export default function ProfileScreen() {
           Sign Out
         </Button>
       </View>
-    </ScrollView>
+    </div>
   );
 }

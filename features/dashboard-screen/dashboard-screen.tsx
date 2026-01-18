@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useQuery } from 'convex/react';
-import { useUser } from '@clerk/nextjs';
 import { api } from '@/convex/_generated/api';
-import { PhaseSelector } from './components/phase-selector/phase-selector';
-import { View, Text, ScrollView, ActivityIndicator, Card } from '@/lib/ui/components';
+import { ActivityIndicator, Card, Text, View } from '@/lib/ui/components';
 import { SignOutButton } from '@/shared/components/sign-out-button';
+import { useUser } from '@clerk/nextjs';
+import { useQuery } from 'convex/react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { PhaseSelector } from './components/phase-selector/phase-selector';
 
 export default function Dashboard() {
   const templates = useQuery(api.workouts.get_all_workout_templates);
   const [selectedPhase, setSelectedPhase] = useState(1);
   const { user } = useUser();
   const activeProgram = useQuery(api.programs.get_active_program);
-  const phases = useQuery(api.phases.get_phases, activeProgram?._id ? { programId: activeProgram._id } : 'skip');
+  const phases = useQuery(api.phases.get_phases);
 
   const availablePhases = useMemo(() => {
     if (!phases) return [1];
@@ -39,18 +39,14 @@ export default function Dashboard() {
   }
 
   return (
-    <ScrollView className="min-h-screen bg-background">
-      <View className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+    <div className="screen-container w-full">
+      <View className="w-full flex flex-col">
+        <div className="flex flex-row items-center sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
           <Text className="text-sm text-subtle-text">
             Welcome {user?.firstName || user?.primaryEmailAddress?.emailAddress}
           </Text>
           <SignOutButton />
         </div>
-
-        <Text variant="h1" className="text-3xl font-bold text-center mb-8">
-          XCEED
-        </Text>
 
         {templates.length === 0 || !activeProgram ? (
           <Card className="p-8 text-center">
@@ -58,7 +54,7 @@ export default function Dashboard() {
             <Text className="text-subtle-text mb-6">
               You don't have an active program yet. Create one in the Plan tab to get started.
             </Text>
-            <Link href="/plan">
+            <Link to="/plan">
               <button className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90">
                 Go to Plan
               </button>
@@ -74,7 +70,7 @@ export default function Dashboard() {
               />
             )}
 
-            <Text variant="h2" className="text-xl font-semibold mb-5 mt-6">
+            <Text variant="h2" className="text-xl font-semibold mb-5 mt-3">
               Workouts for Phase {selectedPhase}
             </Text>
 
@@ -86,13 +82,13 @@ export default function Dashboard() {
                 </Text>
               </Card>
             ) : (
-              <View className="space-y-4">
+              <View className="space-y-2 flex flex-col ">
                 {uniqueDays.map((day) => {
                   const phaseTemplate = phases?.find(t => t.phase === selectedPhase && t.day === day);
                   return (
                     <Link
                       key={day}
-                      href={`/workout/${selectedPhase}/${day}`}
+                      to={`/workout/${selectedPhase}/${day}`}
                       className="block"
                     >
                       <Card className="p-5 hover:bg-card/80 transition-colors cursor-pointer">
@@ -112,7 +108,7 @@ export default function Dashboard() {
               </View>
             )}
 
-            <Link href="/custom-workout" className="block mt-4">
+            <Link to="/custom-workout" className="block mt-2">
               <Card className="p-5 hover:bg-card/80 transition-colors cursor-pointer">
                 <Text variant="h3" className="text-lg font-bold text-primary mb-2">
                   Custom Workout
@@ -128,7 +124,7 @@ export default function Dashboard() {
           </>
         )}
       </View>
-    </ScrollView>
+    </div>
   );
 }
 

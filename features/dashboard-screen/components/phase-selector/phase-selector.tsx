@@ -1,6 +1,6 @@
 'use client';
 
-import { View, Text, TouchableOpacity } from '@/lib/ui/components';
+import { Text, TouchableOpacity, View } from '@/lib/ui/components';
 import { cn } from '@/lib/utils';
 
 interface PhaseSelectorProps {
@@ -10,13 +10,13 @@ interface PhaseSelectorProps {
 }
 
 export const PhaseSelector = ({ selectedPhase, onPhaseChange, phases }: PhaseSelectorProps) => (
-  <View className="flex flex-row justify-around bg-card rounded-xl p-1.5 mb-6">
+  <View className="flex flex-row justify-around bg-card rounded-xl p-1.5 mb-2 overflow-x-auto">
     {phases.map(phase => (
       <TouchableOpacity
         key={phase}
         onClick={() => onPhaseChange(phase)}
         className={cn(
-          'px-5 py-2.5 rounded-lg transition-colors',
+          'px-4 py-2.5 rounded-lg transition-colors flex-shrink-0',
           selectedPhase === phase
             ? 'bg-primary'
             : 'hover:bg-card/50'
@@ -24,7 +24,7 @@ export const PhaseSelector = ({ selectedPhase, onPhaseChange, phases }: PhaseSel
       >
         <Text
           className={cn(
-            'font-bold text-base',
+            'font-bold text-sm sm:text-base whitespace-nowrap',
             selectedPhase === phase
               ? 'text-background'
               : 'text-placeholder'

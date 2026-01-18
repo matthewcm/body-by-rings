@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { ScrollView, Text, ActivityIndicator, View, Button } from '@/lib/ui/components';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Text, ActivityIndicator, View, Button } from '@/lib/ui/components';
+import { useHistory, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ExerciseCard } from '@/features/workout-screen/components/exercise-card';
@@ -12,10 +12,10 @@ import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { Id } from '@/convex/_generated/dataModel';
 
 export default function WorkoutScreen() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const phase = searchParams.get('phase') || '1';
-  const day = searchParams.get('day') || '1';
+  const history = useHistory();
+  const params = useParams<{ phase: string; day: string }>();
+  const phase = params.phase || '1';
+  const day = params.day || '1';
 
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -93,7 +93,7 @@ export default function WorkoutScreen() {
     try {
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
-      router.push('/');
+      history.push('/');
     } catch (error) {
       alert('Could not save workout.');
       console.error('Error saving workout:', error);
@@ -111,8 +111,8 @@ export default function WorkoutScreen() {
   }
 
   return (
-    <ScrollView className="min-h-screen bg-background pb-24">
-      <div className="flex flex-row justify-end px-5 py-4">
+    <div className="screen-container w-full">
+      <div className="flex flex-row justify-end px-5 py-4 mb-4">
         <Button
           variant="primary"
           onClick={handleFinishPress}
@@ -148,6 +148,6 @@ export default function WorkoutScreen() {
           );
         })}
       </View>
-    </ScrollView>
+    </div>
   );
 }

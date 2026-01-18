@@ -6,7 +6,7 @@ import { exerciseMuscleMap } from '@/shared/constants/muscle-mapping';
 import { THEME } from '@/shared/theme/colours';
 import { generateHexShades } from '@/shared/utils/colors';
 import { useQuery } from 'convex/react';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import Body from 'react-body-highlighter';
 
 interface MuscleMapProps {
@@ -16,6 +16,7 @@ interface MuscleMapProps {
 export const MuscleMap = ({ performedExercises }: MuscleMapProps) => {
   const exerciseMuscleMappings = useQuery(api.workouts.get_exercise_muscle_mappings);
   const colorPalette = generateHexShades(THEME.error, 6, 20);
+  console.log(exerciseMuscleMappings);
   
   // Transform exercises into IExerciseData format for react-body-highlighter
   const exerciseData = useMemo(() => {
@@ -41,14 +42,16 @@ export const MuscleMap = ({ performedExercises }: MuscleMapProps) => {
     }).filter(ex => ex.muscles.length > 0);
   }, [performedExercises, exerciseMuscleMappings]);
 
+  console.log(exerciseData);
+
   if (!exerciseData || exerciseData.length === 0) {
     return null;
   }
 
   return (
-    <View className="flex flex-row justify-around items-center my-2.5 px-5 w-full">
+    <View className="flex flex-col sm:flex-row justify-around items-center my-2.5 px-5 w-full gap-4 sm:gap-0">
       {/* Front View (Anterior) */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
         <Body
           data={exerciseData}
           type="anterior"
@@ -60,7 +63,7 @@ export const MuscleMap = ({ performedExercises }: MuscleMapProps) => {
       </div>
 
       {/* Back View (Posterior) */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
         <Body
           data={exerciseData}
           type="posterior"

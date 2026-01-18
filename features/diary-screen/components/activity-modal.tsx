@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Card, Modal, ScrollView, Text, View } from '@/lib/ui/components';
+import { MuscleMap } from '@/shared/components/muscle-map/muscle-map';
 import { Dumbbell, X } from 'lucide-react';
 
 interface ActivityModalProps {

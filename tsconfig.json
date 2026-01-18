@@ -35,6 +35,19 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "app-old/**",
+    "scripts/**",
+    "shared/components/external-link.tsx",
+    "shared/components/haptic-tab.tsx",
+    "shared/components/hello-wave.tsx",
+    "shared/components/parallax-scroll-view.tsx",
+    "shared/components/themed-text.tsx",
+    "shared/components/themed-view.tsx",
+    "shared/components/wod-scanner/**",
+    "shared/components/ui/**",
+    "shared/hooks/use-color-scheme.ts",
+    "shared/hooks/use-color-scheme.web.ts",
+    "shared/hooks/use-theme-color.ts"
   ]
 }
