@@ -146,7 +146,7 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
   }, [lastPerformance]);
 
   return (
-    <Card className="p-4 mb-0 mx-4">
+    <Card className="p-4 mb-0">
       <View className="flex flex-row items-start mb-2 gap-3 relative z-10">
         <Dumbbell className="w-4.5 h-4.5 text-primary flex-shrink-0 mt-2" />
         <div className="flex-1 relative" ref={containerRef}>
@@ -226,13 +226,13 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
             <Input
               type="text"
               value={set.intensity || ''}
-              onChange={(e) => handleSetChange(index, 'intensity', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSetChange(index, 'intensity', e.target.value)}
               className="flex-1 text-center"
             />
             <Input
               type="number"
               value={set.reps || ''}
-              onChange={(e) => handleSetChange(index, 'reps', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSetChange(index, 'reps', e.target.value)}
               className="flex-1 text-center"
             />
             <button

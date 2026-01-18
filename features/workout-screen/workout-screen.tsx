@@ -102,7 +102,7 @@ export default function WorkoutScreen() {
     }
   };
 
-  if (templates === undefined) {
+  if (templates === undefined || lastWorkout === undefined) {
     return (
       <View className="min-h-screen flex items-center justify-center bg-background">
         <ActivityIndicator size="large" />
@@ -132,21 +132,32 @@ export default function WorkoutScreen() {
       />
 
       <View className="pb-24">
-        {exercisesForDay.map(ex => {
-          const exerciseName = ex.exercise?.exerciseName || ex.exerciseName || '';
-          return (
-            <ExerciseCard
-              key={ex._id}
-              exercise={{ ...ex, exerciseName }}
-              performanceData={performanceLog[ex._id] || {
-                sets: Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
-                exerciseName,
-                exerciseId: ex._id
-              }}
-              onUpdate={handleUpdateExercise}
-            />
-          );
-        })}
+        {exercisesForDay.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <Text className="text-subtle-text">No exercises found for this workout.</Text>
+          </div>
+        ) : (
+          exercisesForDay.map(ex => {
+            const exerciseName = ex.exercise?.exerciseName || ex.exerciseName || '';
+            const performanceData = performanceLog[ex._id] || {
+              exerciseName: exerciseName,
+              sets: Array.from({ length: ex.targetSets || 3 }, () => ({ reps: '', intensity: '', completed: false })),
+              notes: '',
+              exerciseId: ex._id,
+              lastPerformance: lastWorkout?.performance.find(p => p.exerciseName === exerciseName) 
+                ? {...lastWorkout.performance.find(p => p.exerciseName === exerciseName)!, exerciseId: ex._id}
+                : undefined,
+            };
+            return (
+              <ExerciseCard
+                key={ex._id}
+                exercise={{ ...ex, exerciseName }}
+                performanceData={performanceData}
+                onUpdate={handleUpdateExercise}
+              />
+            );
+          })
+        )}
       </View>
     </div>
   );
