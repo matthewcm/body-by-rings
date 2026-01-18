@@ -188,11 +188,12 @@ export default function StatsScreen() {
   };
 
   const toggleMuscle = (muscle: string) => {
-    setSelectedMuscles(prev => 
-      prev.includes(muscle) 
-        ? prev.filter(m => m !== muscle)
-        : [...prev, muscle]
-    );
+    setSelectedMuscles(prev => {
+      const muscleAsType = muscle as Muscle;
+      return prev.includes(muscleAsType)
+        ? prev.filter(m => m !== muscleAsType)
+        : [...prev, muscleAsType];
+    });
   };
 
   const scrollToLetter = (letter: string) => {
@@ -420,7 +421,7 @@ export default function StatsScreen() {
                         onClick={() => {
                           setIsEditing(false);
                           setEditingName(currentCustomExercise.exerciseName);
-                          setSelectedMuscles(currentCustomExercise.muscles || []);
+                          setSelectedMuscles((currentCustomExercise.muscles || []) as Muscle[]);
                         }}
                         className="flex flex-row items-center gap-1.5"
                       >
@@ -452,20 +453,23 @@ export default function StatsScreen() {
                             {groupName}
                           </Text>
                           <div className="flex flex-row flex-wrap gap-1.5">
-                            {muscles.map(muscle => (
-                              <button
-                                key={muscle}
-                                onClick={() => toggleMuscle(muscle)}
-                                className={cn(
-                                  'px-2.5 py-1.5 rounded-xl border text-xs text-center min-w-[80px] transition-colors',
-                                  selectedMuscles.includes(muscle)
-                                    ? 'bg-primary border-primary text-background font-semibold'
-                                    : 'bg-background border-border text-text hover:bg-card/50'
-                                )}
-                              >
-                                {muscle.replace('-', ' ')}
-                              </button>
-                            ))}
+                            {muscles.map(muscle => {
+                              const muscleAsType = muscle as Muscle;
+                              return (
+                                <button
+                                  key={muscle}
+                                  onClick={() => toggleMuscle(muscle)}
+                                  className={cn(
+                                    'px-2.5 py-1.5 rounded-xl border text-xs text-center min-w-[80px] transition-colors',
+                                    selectedMuscles.includes(muscleAsType)
+                                      ? 'bg-primary border-primary text-background font-semibold'
+                                      : 'bg-background border-border text-text hover:bg-card/50'
+                                  )}
+                                >
+                                  {muscle.replace('-', ' ')}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}

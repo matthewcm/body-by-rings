@@ -1,8 +1,6 @@
 'use client';
 
-import React from 'react';
-import { View, Text, Card } from '@/lib/ui/components';
-import { Clock } from 'lucide-react';
+import { Card, Text } from '@/lib/ui/components';
 
 interface WodCardProps {
   title: string;
@@ -13,7 +11,7 @@ interface WodCardProps {
 
 export const WodCard = ({ title, timeCap, repScheme, exercises }: WodCardProps) => {
   return (
-    <Card className="mx-4 my-2.5 p-4 shadow-lg">
+    <Card className="p-4 shadow-lg">
       <div className="flex flex-row justify-between items-start mb-3">
         <div>
           <Text variant="h3" className="text-lg font-extrabold uppercase">

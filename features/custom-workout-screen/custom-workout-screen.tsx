@@ -3,13 +3,13 @@
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
+import { ActivityIndicator, Button, Text, View } from '@/lib/ui/components';
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { isNotNull } from '@/shared/utils/array';
 import { useAction, useMutation } from 'convex/react';
-import { useHistory } from 'react-router-dom';
-import React, { useMemo, useState } from 'react';
-import { Text, View, Button, ActivityIndicator } from '@/lib/ui/components';
 import { Camera, Image, Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
 import { NewExerciseCard } from './components/new-exercise-card';
@@ -203,20 +203,20 @@ export default function CustomWorkoutScreen() {
         withMuscleMap={false}
       />
 
-      <View className="px-5 pb-5">
-        <div className="flex flex-row gap-2 mb-5 border-b border-border pb-5">
+      <View className="px-0 pb-5">
+        <div className="flex flex-row gap-2 mb-5 border-b border-border pb-5 flex-wrap w-full ">
           <Button
             variant="secondary"
             onClick={() => handleScanWOD('camera')}
             disabled={isScanning}
-            className="flex-1 flex flex-row items-center justify-center gap-2"
+            className="flex-1 flex flex-row items-center justify-center gap-2 w-fit"
           >
             {isScanning ? (
               <ActivityIndicator size="small" />
             ) : (
               <>
                 <Camera className="w-4 h-4" />
-                <Text className="font-bold">Scan WOD Board</Text>
+                <Text className="font-bold text-nowrap">Scan WOD Board</Text>
               </>
             )}
           </Button>
@@ -224,18 +224,20 @@ export default function CustomWorkoutScreen() {
             variant="secondary"
             onClick={() => handleScanWOD('gallery')}
             disabled={isScanning}
-            className="flex-1 flex flex-row items-center justify-center gap-2"
+            className="flex-1 flex flex-row items-center justify-center gap-2 w-fit"
           >
             {isScanning ? (
               <ActivityIndicator size="small" />
             ) : (
               <>
                 <Image className="w-4 h-4" />
-                <Text className="font-bold">WOD from gallery</Text>
+                <Text className="font-bold text-nowrap">WOD from gallery</Text>
               </>
             )}
           </Button>
         </div>
+
+        <div className="flex flex-col gap-2">
 
         {wodBlocks.map((block, idx) => (
           <WodCard
@@ -247,19 +249,35 @@ export default function CustomWorkoutScreen() {
           />
         ))}
 
+        </div>
         <Text className="text-center my-4 text-text text-lg font-extrabold uppercase">
           Log Performance
         </Text>
 
-        {exercisesForDay.map(ex => (
-          <NewExerciseCard
-            key={ex._id}
-            exercise={ex}
-            performanceData={performanceLog[ex._id] || { sets: [], exerciseName: ex.exerciseName }}
-            onUpdate={handleUpdateExercise}
-            onDelete={handleDeleteExercise}
-          />
-        ))}
+        <div className="flex flex-col gap-2">
+        {exercisesForDay.length === 0 ? (
+          <div className="px-0 py-10 text-center">
+            <Text className="text-subtle-text">No exercises yet. Add exercises or scan a WOD to get started.</Text>
+          </div>
+        ) : (
+          exercisesForDay.map(ex => {
+            const performanceData = performanceLog[ex._id] || {
+              sets: [{ reps: '', intensity: '', completed: false }],
+              exerciseName: ex.exerciseName || '',
+              exerciseId: ex._id
+            };
+            return (
+              <NewExerciseCard
+                key={ex._id}
+                exercise={ex}
+                performanceData={performanceData}
+                onUpdate={handleUpdateExercise}
+                onDelete={handleDeleteExercise}
+              />
+            );
+          })
+        )}
+    </div>
 
         <Button
           variant="primary"
