@@ -1,10 +1,9 @@
+'use client';
 
 import { api } from '@/convex/_generated/api';
-import { THEME } from '@/shared/theme/colours';
 import { useQuery } from 'convex/react';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, Text, View } from '@/lib/ui/components';
 import { ActivityModal } from './components/activity-modal';
 import { CalendarWidget } from './components/calendar-widget';
 import { DiaryActivities } from './components/diary-table';
@@ -13,16 +12,13 @@ import { MuscleUsageChart } from './components/muscle-usage-chart';
 import { PerformanceChart } from './components/performance-chart';
 import { SummaryLog } from './types/summary-log';
 
-
 export default function DiaryScreen() {
+  const workoutLogs = useQuery(api.workouts.get_workout_logs);
 
-  const workoutLogs = useQuery(api.workouts.get_workout_logs)
-
-  const [isMoreInfoVisible, setIsMoreInfoVisible] = React.useState(false);
-  const [activeExercise, setActiveExercise] = React.useState<any>(null);
+  const [isMoreInfoVisible, setIsMoreInfoVisible] = useState(false);
+  const [activeExercise, setActiveExercise] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Get all dates with workouts for calendar highlighting
   const activeDates = useMemo(() => {
     if (!workoutLogs) return new Set<string>();
     const dates = new Set<string>();
@@ -33,10 +29,9 @@ export default function DiaryScreen() {
     return dates;
   }, [workoutLogs]);
 
-  // Get workouts for the selected week
   const getWeekDates = (date: Date): Date[] => {
     const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(date);
     monday.setDate(diff);
     const week: Date[] = [];
@@ -51,14 +46,12 @@ export default function DiaryScreen() {
   const recentWorkouts = useMemo(() => {
     if (!workoutLogs) return {};
     
-    // Get the week range for filtering
     const weekDates = getWeekDates(selectedDate);
     const weekStart = weekDates[0];
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = weekDates[6];
     weekEnd.setHours(23, 59, 59, 999);
     
-    // Filter workouts for the selected week
     const weekLogs = workoutLogs.filter(log => {
       const logDate = new Date(log.date);
       return logDate >= weekStart && logDate <= weekEnd;
@@ -71,7 +64,7 @@ export default function DiaryScreen() {
           const setsCount = lastPerformance.sets.length;
           const totalReps = lastPerformance.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
           const setIntensity = lastPerformance.sets.find((s) => s.intensity)?.intensity;
-          const totalVolume = lastPerformance.sets.reduce((sum, s) => sum + parseInt(s.reps), 0)
+          const totalVolume = lastPerformance.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
           const avgReps = (totalReps / setsCount).toFixed(1);
           return {
             date: new Date(workoutSession.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }),
@@ -81,14 +74,13 @@ export default function DiaryScreen() {
             rawDate: new Date(workoutSession.date),
             workoutId: workoutSession._id,
           };
-        })
+        });
       })
       .flat()
-      .filter(a => a !== null)
-      .sort((a, b) => (b?.rawDate.getTime() || 0) - (a?.rawDate.getTime() || 0)); // Sort by most recent first
+      .filter((a): a is NonNullable<typeof a> => a !== null)
+      .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
     const groupedByDate = sortedLogs.reduce((acc: Record<string, SummaryLog[]>, log) => {
-      if (!log) return acc;
       const dateKey = log.date;
       if (!acc[dateKey]) {
         acc[dateKey] = [];
@@ -97,19 +89,16 @@ export default function DiaryScreen() {
       return acc;
     }, {});
 
-    return groupedByDate
+    return groupedByDate;
   }, [workoutLogs, selectedDate]);
 
   const handleViewMoreInfo = (workoutId: string, exerciseName: string) => {
-
-    // should use Convex query here
     const workoutEx = workoutLogs?.find(ex => ex._id === workoutId);
     const activeEx = workoutEx?.performance.find(perf => perf.exerciseName === exerciseName);
     setActiveExercise({
       ...activeEx,
       date: workoutEx ? new Date(workoutEx.date).toLocaleDateString('en-GB', { weekday: 'long', month: 'short', day: 'numeric' }) : '',
     });
-
     setIsMoreInfoVisible(true);
   };
 
@@ -122,14 +111,11 @@ export default function DiaryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ActivityModal
-        isVisible={isMoreInfoVisible}
-        exercise={activeExercise}
-        onClose={() => setIsMoreInfoVisible(false)}
-      />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Workout Diary</Text>
+    <ScrollView className="min-h-screen bg-background">
+      <View className="container mx-auto px-4 py-8">
+        <Text variant="h1" className="text-3xl font-bold text-center mb-6">
+          Workout Diary
+        </Text>
 
         <MetricsWidget workoutLogs={workoutLogs} />
 
@@ -144,18 +130,16 @@ export default function DiaryScreen() {
 
         <MuscleUsageChart workoutLogs={workoutLogs} />
 
-        <View>
+        <View className="mt-6">
           <DiaryActivities data={recentWorkouts} onViewMoreInfo={handleViewMoreInfo} />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      <ActivityModal
+        isVisible={isMoreInfoVisible}
+        exercise={activeExercise}
+        onClose={() => setIsMoreInfoVisible(false)}
+      />
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  container: { padding: 16 },
-  header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 24, textAlign: 'center' },
-  sectionTitle: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 16, marginTop: 8 },
-});
-

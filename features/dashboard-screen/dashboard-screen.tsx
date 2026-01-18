@@ -1,24 +1,20 @@
-import { Link, Stack } from 'expo-router';
+'use client';
+
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-import { authStyles } from '@/features/sign-in-screen/styles/auth-styles';
-import { SignOutButton } from '@/shared/components/sign-out-button';
-import { THEME } from '@/shared/theme/colours';
-import { SignedIn, useUser } from '@clerk/clerk-expo';
-import { useQuery } from "convex/react";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { api } from "../../convex/_generated/api";
+import Link from 'next/link';
+import { useQuery } from 'convex/react';
+import { useUser } from '@clerk/nextjs';
+import { api } from '@/convex/_generated/api';
 import { PhaseSelector } from './components/phase-selector/phase-selector';
-
-
+import { View, Text, ScrollView, ActivityIndicator, Card } from '@/lib/ui/components';
+import { SignOutButton } from '@/shared/components/sign-out-button';
 
 export default function Dashboard() {
   const templates = useQuery(api.workouts.get_all_workout_templates);
   const [selectedPhase, setSelectedPhase] = useState(1);
-  const user = useUser().user;
-
-  const phases = useQuery(api.phases.get_phases);
+  const { user } = useUser();
+  const activeProgram = useQuery(api.programs.get_active_program);
+  const phases = useQuery(api.phases.get_phases, activeProgram?._id ? { programId: activeProgram._id } : 'skip');
 
   const availablePhases = useMemo(() => {
     if (!phases) return [1];
@@ -34,111 +30,106 @@ export default function Dashboard() {
     )].sort((a, b) => a - b);
   }, [templates, selectedPhase]);
 
-  if (templates === undefined) {
+  if (templates === undefined || activeProgram === undefined) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={THEME.activityIndicator} />
+      <View className="min-h-screen flex items-center justify-center bg-background">
+        <ActivityIndicator size="large" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScrollView className="min-h-screen bg-background">
+      <View className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Text className="text-sm text-subtle-text">
+            Welcome {user?.firstName || user?.primaryEmailAddress?.emailAddress}
+          </Text>
+          <SignOutButton />
+        </div>
 
-      <Stack.Screen options={{ title: 'Workout Dashboard' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <SignedIn>
-          <View style={{ flexDirection: 'row', alignItems: 'center', alignContent: 'center', justifyContent: 'space-between' }}>
-            <Text style={authStyles.subtitle}>Welcome {user?.firstName || user?.primaryEmailAddress?.emailAddress}</Text>
-            <SignOutButton />
-          </View>
-        </SignedIn>
-        <Text style={styles.header}>XCEED</Text>
+        <Text variant="h1" className="text-3xl font-bold text-center mb-8">
+          XCEED
+        </Text>
 
- 
- {phases && phases.length > 0 && (
-        <PhaseSelector
-          selectedPhase={selectedPhase}
-          setSelectedPhase={setSelectedPhase}
-          phases={availablePhases}
-        />
- )}
-
-        <Text style={styles.subHeader}>Workouts for Phase {selectedPhase}</Text>
-
-        {uniqueDays.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No workouts available for Phase {selectedPhase}</Text>
-            <Text style={styles.emptyStateSubtext}>Create a program and add exercises to get started</Text>
-          </View>
+        {templates.length === 0 || !activeProgram ? (
+          <Card className="p-8 text-center">
+            <Text variant="h2" className="mb-4">No Active Program</Text>
+            <Text className="text-subtle-text mb-6">
+              You don't have an active program yet. Create one in the Plan tab to get started.
+            </Text>
+            <Link href="/plan">
+              <button className="px-6 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90">
+                Go to Plan
+              </button>
+            </Link>
+          </Card>
         ) : (
-          uniqueDays.map(day => (
-            <Link key={day} href={{ pathname: `/workout/${selectedPhase}/${day}` }} asChild>
-              <TouchableOpacity style={styles.card}>
-                <Text style={styles.cardText}>Day {`${day} : ${phases?.find(t => t.phase === selectedPhase && t.day === day)?.type || ''}`}
-                </Text>
-                <Text style={styles.cardSubText}>
-                  {phases?.find(t => t.phase === selectedPhase && t.day === day)?.title || `Day ${day} workout`}
-                </Text>
+          <>
+            {phases && phases.length > 0 && (
+              <PhaseSelector
+                phases={availablePhases}
+                selectedPhase={selectedPhase}
+                onPhaseChange={setSelectedPhase}
+              />
+            )}
 
-                <Text style={styles.cardSubText}>
+            <Text variant="h2" className="text-xl font-semibold mb-5 mt-6">
+              Workouts for Phase {selectedPhase}
+            </Text>
+
+            {uniqueDays.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Text variant="h3" className="mb-2">No workouts available for Phase {selectedPhase}</Text>
+                <Text className="text-subtle-text">
+                  Create a program and add exercises to get started
+                </Text>
+              </Card>
+            ) : (
+              <View className="space-y-4">
+                {uniqueDays.map((day) => {
+                  const phaseTemplate = phases?.find(t => t.phase === selectedPhase && t.day === day);
+                  return (
+                    <Link
+                      key={day}
+                      href={`/workout/${selectedPhase}/${day}`}
+                      className="block"
+                    >
+                      <Card className="p-5 hover:bg-card/80 transition-colors cursor-pointer">
+                        <Text variant="h3" className="text-lg font-bold text-primary mb-2">
+                          Day {day}{phaseTemplate?.type ? ` : ${phaseTemplate.type}` : ''}
+                        </Text>
+                        <Text className="text-placeholder text-sm mb-2">
+                          {phaseTemplate?.title || `Day ${day} workout`}
+                        </Text>
+                        <Text className="text-placeholder text-sm">
+                          Tap to start your session
+                        </Text>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </View>
+            )}
+
+            <Link href="/custom-workout" className="block mt-4">
+              <Card className="p-5 hover:bg-card/80 transition-colors cursor-pointer">
+                <Text variant="h3" className="text-lg font-bold text-primary mb-2">
+                  Custom Workout
+                </Text>
+                <Text className="text-placeholder text-sm mb-2">
+                  Create your own workout session
+                </Text>
+                <Text className="text-placeholder text-sm">
                   Tap to start your session
                 </Text>
-              </TouchableOpacity>
+              </Card>
             </Link>
-          ))
+          </>
         )}
-
-          <Link href={{ pathname: `/custom-workout` }} asChild>
-            <TouchableOpacity style={styles.card}>
-              <Text style={styles.cardText}>Custom Workout
-              </Text>
-              <Text style={styles.cardSubText}>
-                Create your own workout session
-              </Text>
-
-              <Text style={styles.cardSubText}>
-                Tap to start your session
-              </Text>
-            </TouchableOpacity>
-          </Link>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  container: { padding: 16 },
-  header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-  subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 20, marginTop: 10 },
-  card: { backgroundColor: THEME.card, borderRadius: 12, padding: 20, marginBottom: 16 },
-  cardText: { color: THEME.primary, fontSize: 18, fontWeight: 'bold' },
-  cardSubText: { color: THEME.placeholder, fontSize: 14, marginTop: 4 },
-  phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
-  phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  phaseButtonSelected: { backgroundColor: THEME.primary },
-  phaseButtonText: { color: THEME.placeholder, fontWeight: 'bold', fontSize: 16 },
-  phaseButtonTextSelected: { color: THEME.background },
-  emptyState: {
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: THEME.subtleText,
-    textAlign: 'center',
-  },
-});
 
 

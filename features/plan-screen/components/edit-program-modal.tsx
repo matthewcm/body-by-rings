@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { Modal, View, Text, ScrollView, TouchableOpacity, Button } from '@/lib/ui/components';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { ExercisePickerModal } from './exercise-picker-modal';
+import { ConfirmModal } from './confirm-modal';
+import { cn } from '@/lib/utils';
 
 interface EditProgramModalProps {
   visible: boolean;
@@ -17,7 +20,10 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
   const [selectedPhase, setSelectedPhase] = useState<number>(1);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pendingDay, setPendingDay] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<Id<'workoutTemplates'> | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const program = useQuery(
     api.programs.get_program_by_id,
@@ -30,7 +36,6 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
     programId && selectedPhase ? { programId, phase: selectedPhase } : 'skip'
   );
 
-  const updateTemplate = useMutation(api.programs.update_workout_template);
   const addExercise = useMutation(api.programs.add_program_exercise);
   const deleteTemplate = useMutation(api.programs.delete_workout_template);
 
@@ -49,11 +54,12 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
 
   const handleAddExercise = (day: number) => {
     if (!allExercises || allExercises.length === 0) {
-      Alert.alert('Error', 'No exercises available. Please create exercises first.');
+      setError('No exercises available. Please create exercises first.');
       return;
     }
     setPendingDay(day);
     setShowExercisePicker(true);
+    setError(null);
   };
 
   const handleSelectExercise = async (exerciseId: Id<'exerciseCatalog'>) => {
@@ -73,35 +79,34 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
         rest: '60s',
       });
       setPendingDay(null);
+      setError(null);
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to add exercise');
+      setError(error instanceof Error ? error.message : 'Failed to add exercise');
       setPendingDay(null);
     }
   };
 
   const handleDeleteExercise = async (templateId: Id<'workoutTemplates'>) => {
-    Alert.alert(
-      'Delete Exercise',
-      'Are you sure you want to remove this exercise?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const result = await deleteTemplate({ templateId });
-              // The query should automatically refresh, but we can also manually reset state if needed
-              if (result?.success === false) {
-                Alert.alert('Error', result.message || 'Failed to delete exercise');
-              }
-            } catch (error) {
-              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete exercise');
-            }
-          },
-        },
-      ]
-    );
+    setPendingDeleteId(templateId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+
+    try {
+      const result = await deleteTemplate({ templateId: pendingDeleteId });
+      if (result?.success === false) {
+        setError(result.message || 'Failed to delete exercise');
+      } else {
+        setError(null);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete exercise');
+    } finally {
+      setPendingDeleteId(null);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const dayTemplates = selectedDay !== null && templates
@@ -109,125 +114,149 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
     : [];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Edit Program</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <FontAwesome5 name="times" size={20} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
+    <>
+      <Modal visible={visible} onClose={onClose} className="max-h-[90vh]">
+        <div className="flex flex-col max-h-[90vh]">
+          <div className="flex flex-row justify-between items-center p-5 border-b border-border">
+            <Text variant="h2" className="text-2xl font-bold">
+              Edit Program
+            </Text>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-card/50 rounded transition-colors"
+            >
+              <X className="w-5 h-5 text-text" />
+            </button>
+          </div>
 
-          <ScrollView style={styles.content}>
-            <View style={styles.programInfo}>
-              <Text style={styles.programTitle}>{program.title}</Text>
-              <Text style={styles.programDescription}>{program.description}</Text>
-            </View>
+          <ScrollView className="flex-1 overflow-auto p-5">
+            <div className="space-y-6">
+              <div className="mb-6">
+                <Text variant="h3" className="text-xl font-bold mb-2">
+                  {program.title}
+                </Text>
+                <Text className="text-subtle-text text-sm leading-5">
+                  {program.description}
+                </Text>
+              </div>
 
-            <View style={styles.phaseSelector}>
-              <Text style={styles.sectionTitle}>Select Phase</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {phases.map((phase) => (
-                  <TouchableOpacity
-                    key={phase}
-                    style={[
-                      styles.phaseButton,
-                      selectedPhase === phase && styles.phaseButtonActive,
-                    ]}
-                    onPress={() => {
-                      setSelectedPhase(phase);
-                      setSelectedDay(null);
+              {error && (
+                <div className="p-3 rounded-md bg-error/10 border border-error/20">
+                  <Text className="text-error text-sm">{error}</Text>
+                </div>
+              )}
+
+              <div>
+                <Text variant="h3" className="text-lg font-semibold mb-3">
+                  Select Phase
+                </Text>
+                <div className="flex flex-row gap-2 overflow-x-auto pb-2">
+                  {phases.map((phase) => (
+                    <button
+                      key={phase}
+                      onClick={() => {
+                        setSelectedPhase(phase);
+                        setSelectedDay(null);
+                      }}
+                      className={cn(
+                        'px-4 py-2 rounded-lg border transition-colors whitespace-nowrap',
+                        selectedPhase === phase
+                          ? 'bg-primary border-primary text-background'
+                          : 'bg-background border-border text-text hover:bg-card/50'
+                      )}
+                    >
+                      <Text className={cn('font-semibold', selectedPhase === phase && 'text-background')}>
+                        Phase {phase}
+                      </Text>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Text variant="h3" className="text-lg font-semibold mb-3">
+                  Select Day
+                </Text>
+                <div className="flex flex-row flex-wrap gap-2">
+                  {days.map((day) => (
+                    <button
+                      key={day}
+                      onClick={() => setSelectedDay(day)}
+                      className={cn(
+                        'px-4 py-2 rounded-lg border transition-colors',
+                        selectedDay === day
+                          ? 'bg-primary border-primary text-background'
+                          : 'bg-background border-border text-text hover:bg-card/50'
+                      )}
+                    >
+                      <Text className={cn('font-semibold', selectedDay === day && 'text-background')}>
+                        Day {day}
+                      </Text>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const newDay = days.length > 0 ? Math.max(...days) + 1 : 1;
+                      setSelectedDay(newDay);
                     }}
+                    className="px-4 py-2 rounded-lg border border-dashed border-primary bg-background text-primary hover:bg-card/50 transition-colors flex flex-row items-center gap-2"
                   >
-                    <Text
-                      style={[
-                        styles.phaseButtonText,
-                        selectedPhase === phase && styles.phaseButtonTextActive,
-                      ]}
-                    >
-                      Phase {phase}
+                    <Plus className="w-4 h-4" />
+                    <Text className="font-semibold text-primary">Add Day</Text>
+                  </button>
+                </div>
+              </div>
+
+              {selectedDay !== null && (
+                <div>
+                  <div className="flex flex-row justify-between items-center mb-3">
+                    <Text variant="h3" className="text-lg font-semibold">
+                      Day {selectedDay} Exercises
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            <View style={styles.daySelector}>
-              <Text style={styles.sectionTitle}>Select Day</Text>
-              <View style={styles.dayGrid}>
-                {days.map((day) => (
-                  <TouchableOpacity
-                    key={day}
-                    style={[
-                      styles.dayButton,
-                      selectedDay === day && styles.dayButtonActive,
-                    ]}
-                    onPress={() => setSelectedDay(day)}
-                  >
-                    <Text
-                      style={[
-                        styles.dayButtonText,
-                        selectedDay === day && styles.dayButtonTextActive,
-                      ]}
+                    <button
+                      onClick={() => handleAddExercise(selectedDay)}
+                      className="flex flex-row items-center gap-1.5 px-3 py-1.5 rounded-md bg-background text-primary hover:bg-card/50 transition-colors"
                     >
-                      Day {day}
+                      <Plus className="w-3.5 h-3.5" />
+                      <Text className="text-sm font-semibold text-primary">Add Exercise</Text>
+                    </button>
+                  </div>
+
+                  {dayTemplates.length === 0 ? (
+                    <Text className="text-placeholder text-sm italic text-center py-5">
+                      No exercises for this day yet.
                     </Text>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  style={styles.addDayButton}
-                  onPress={() => {
-                    const newDay = days.length > 0 ? Math.max(...days) + 1 : 1;
-                    setSelectedDay(newDay);
-                  }}
-                >
-                  <FontAwesome5 name="plus" size={16} color={THEME.primary} />
-                  <Text style={styles.addDayButtonText}>Add Day</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {selectedDay !== null && (
-              <View style={styles.exercisesSection}>
-                <View style={styles.exercisesHeader}>
-                  <Text style={styles.sectionTitle}>Day {selectedDay} Exercises</Text>
-                  <TouchableOpacity
-                    style={styles.addExerciseButton}
-                    onPress={() => handleAddExercise(selectedDay)}
-                  >
-                    <FontAwesome5 name="plus" size={14} color={THEME.primary} />
-                    <Text style={styles.addExerciseButtonText}>Add Exercise</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {dayTemplates.length === 0 ? (
-                  <Text style={styles.emptyText}>No exercises for this day yet.</Text>
-                ) : (
-                  dayTemplates.map((template) => (
-                    <View key={template._id} style={styles.exerciseCard}>
-                      <View style={styles.exerciseInfo}>
-                        <Text style={styles.exerciseName}>
-                          {template.exerciseName || 'Unknown Exercise'}
-                        </Text>
-                        <Text style={styles.exerciseDetails}>
-                          {template.targetSets} sets × {template.targetReps} reps
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.deleteButton}
-                        onPress={() => handleDeleteExercise(template._id)}
-                      >
-                        <FontAwesome5 name="trash" size={16} color={THEME.error} />
-                      </TouchableOpacity>
-                    </View>
-                  ))
-                )}
-              </View>
-            )}
+                  ) : (
+                    <div className="space-y-2">
+                      {dayTemplates.map((template) => (
+                        <div
+                          key={template._id}
+                          className="flex flex-row justify-between items-center bg-background p-3 rounded-lg"
+                        >
+                          <View className="flex-1">
+                            <Text className="text-base font-semibold text-text mb-1">
+                              {template.exercise?.exerciseName || template.exerciseName || 'Unknown Exercise'}
+                            </Text>
+                            <Text className="text-sm text-subtle-text">
+                              {template.targetSets} sets × {template.targetReps} reps
+                            </Text>
+                          </View>
+                          <button
+                            onClick={() => handleDeleteExercise(template._id)}
+                            className="p-2 hover:bg-error/10 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 text-error" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </ScrollView>
-        </View>
-      </View>
+        </div>
+      </Modal>
 
       <ExercisePickerModal
         visible={showExercisePicker}
@@ -238,180 +267,20 @@ export const EditProgramModal = ({ visible, programId, onClose }: EditProgramMod
         }}
         onSelect={handleSelectExercise}
       />
-    </Modal>
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title="Delete Exercise"
+        message="Are you sure you want to remove this exercise?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive={true}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setPendingDeleteId(null);
+        }}
+      />
+    </>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
-    backgroundColor: THEME.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: THEME.text,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  content: {
-    padding: 20,
-  },
-  programInfo: {
-    marginBottom: 24,
-  },
-  programTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: THEME.text,
-    marginBottom: 8,
-  },
-  programDescription: {
-    fontSize: 14,
-    color: THEME.subtleText,
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 12,
-  },
-  phaseSelector: {
-    marginBottom: 24,
-  },
-  phaseButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: THEME.background,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  phaseButtonActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  phaseButtonText: {
-    color: THEME.text,
-    fontWeight: '600',
-  },
-  phaseButtonTextActive: {
-    color: '#fff',
-  },
-  daySelector: {
-    marginBottom: 24,
-  },
-  dayGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  dayButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: THEME.background,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  dayButtonActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  dayButtonText: {
-    color: THEME.text,
-    fontWeight: '600',
-  },
-  dayButtonTextActive: {
-    color: '#fff',
-  },
-  addDayButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: THEME.background,
-    borderWidth: 1,
-    borderColor: THEME.primary,
-    borderStyle: 'dashed',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  addDayButtonText: {
-    color: THEME.primary,
-    fontWeight: '600',
-  },
-  exercisesSection: {
-    marginBottom: 24,
-  },
-  exercisesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  addExerciseButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: THEME.background,
-  },
-  addExerciseButtonText: {
-    color: THEME.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  exerciseCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: THEME.background,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 4,
-  },
-  exerciseDetails: {
-    fontSize: 14,
-    color: THEME.subtleText,
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  emptyText: {
-    color: THEME.placeholder,
-    fontSize: 14,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: 20,
-  },
-});

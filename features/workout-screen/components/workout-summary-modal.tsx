@@ -1,75 +1,78 @@
-import { THEME } from "@/shared/theme/colours"
-import { Modal, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Text } from "react-native"
-import { MuscleMap } from "../../../shared/components/muscle-map/muscle-map"
+'use client';
 
+import { Modal, View, ScrollView, Text, Button, ActivityIndicator } from '@/lib/ui/components';
+import { MuscleMap } from '@/shared/components/muscle-map/muscle-map';
 
-export const WorkoutSummaryModal = (
-  {
-    isVisible,
-    workoutSummary,
-    isSaving,
-    onClose,
-    onConfirm,
-    withMuscleMap=true
-
-  }: {
-    isVisible: boolean,
-    onClose: () => void
-    onConfirm: () => void
-    workoutSummary: {summary?: string, name?: string}[],
-    isSaving: boolean,
-    withMuscleMap?: boolean
-  }
-) => {
-  return (
-    <Modal transparent={true} visible={isVisible} animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Workout Summary</Text>
-          <ScrollView style={{ width: '100%' }}>
-            {withMuscleMap !== false && ( 
-            <MuscleMap performedExercises={workoutSummary
-              .map(s => s.name)
-              .filter(value => {
-                return value !== undefined && value !== null;
-              })
-            } />
-            )}
-
-            {workoutSummary.map(item => (
-              <View key={item.name} style={styles.summaryItem}>
-                <Text style={styles.summaryItemName}>{item.name}</Text>
-                <Text style={styles.summaryItemText}>{item.summary}</Text>
-              </View>
-            ))}
-          </ScrollView>
-          <View style={styles.modalButtonContainer}>
-            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => onClose()}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalButton, styles.confirmButton]} onPress={onConfirm} disabled={isSaving}>
-              {isSaving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.confirmButtonText}>Confirm & Save</Text>}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  )
+interface WorkoutSummaryModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  workoutSummary: { summary?: string; name?: string }[];
+  isSaving: boolean;
+  withMuscleMap?: boolean;
 }
 
-const styles = StyleSheet.create({
-  // Modal Styles
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.8)' },
-  modalContent: { width: '90%', maxHeight: '90%', backgroundColor: THEME.card, borderRadius: 20, padding: 20 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-  summaryItem: { backgroundColor: THEME.background, borderRadius: 8, padding: 12, marginBottom: 8 },
-  summaryItemName: { color: THEME.text, fontSize: 16, fontWeight: 'bold' },
-  summaryItemText: { color: THEME.subtleText, fontSize: 14, marginTop: 4 },
-  modalButtonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, gap: 10 },
-  modalButton: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  cancelButton: { backgroundColor: THEME.border },
-  cancelButtonText: { color: THEME.text, fontWeight: 'bold' },
-  confirmButton: { backgroundColor: THEME.success },
-  confirmButtonText: { color: '#fff', fontWeight: 'bold' },
-})
+export const WorkoutSummaryModal = ({
+  isVisible,
+  workoutSummary,
+  isSaving,
+  onClose,
+  onConfirm,
+  withMuscleMap = true,
+}: WorkoutSummaryModalProps) => {
+  return (
+    <Modal visible={isVisible} onClose={onClose} className="max-w-2xl w-[90%] max-h-[90vh]">
+      <div className="p-5 flex flex-col max-h-[90vh]">
+        <Text variant="h2" className="text-2xl font-bold text-center mb-4">
+          Workout Summary
+        </Text>
+        
+        <ScrollView className="flex-1 overflow-auto w-full mb-5">
+          {withMuscleMap && (
+            <MuscleMap
+              performedExercises={workoutSummary
+                .map(s => s.name)
+                .filter((value): value is string => value !== undefined && value !== null)
+              }
+            />
+          )}
 
+          <div className="space-y-2 mt-4">
+            {workoutSummary.map((item, idx) => (
+              <div key={idx} className="bg-background rounded-lg p-3 mb-2">
+                <Text className="text-base font-bold text-text mb-1">
+                  {item.name}
+                </Text>
+                <Text className="text-sm text-subtle-text mt-1">
+                  {item.summary}
+                </Text>
+              </div>
+            ))}
+          </div>
+        </ScrollView>
+
+        <View className="flex flex-row gap-3 mt-5">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onConfirm}
+            disabled={isSaving}
+            className="flex-1 bg-success hover:bg-success/90"
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              'Confirm & Save'
+            )}
+          </Button>
+        </View>
+      </div>
+    </Modal>
+  );
+};

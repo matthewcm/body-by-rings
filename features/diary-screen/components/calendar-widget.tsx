@@ -1,11 +1,14 @@
-import { THEME } from '@/shared/theme/colours';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Card } from '@/lib/ui/components';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CalendarWidgetProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
-  activeDates: Set<string>; // Set of date strings (YYYY-MM-DD) that have workouts
+  activeDates: Set<string>;
   onWeekChange: (date: Date) => void;
 }
 
@@ -17,30 +20,26 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
   activeDates,
   onWeekChange,
 }) => {
-  const [viewMode, setViewMode] = React.useState<ViewMode>('month');
-  const [currentMonth, setCurrentMonth] = React.useState(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [currentMonth, setCurrentMonth] = useState(() => {
     const date = new Date(selectedDate);
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
 
-  // Update current month when selectedDate changes significantly
-  React.useEffect(() => {
+  useEffect(() => {
     const selected = new Date(selectedDate);
     const current = new Date(currentMonth);
     if (selected.getMonth() !== current.getMonth() || selected.getFullYear() !== current.getFullYear()) {
       setCurrentMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
-  // Get all weeks for the current month
   const getMonthWeeks = (month: Date): Date[][] => {
     const year = month.getFullYear();
     const monthIndex = month.getMonth();
     const firstDay = new Date(year, monthIndex, 1);
     const lastDay = new Date(year, monthIndex + 1, 0);
     
-    // Get the Monday of the week containing the first day
     const startDate = new Date(firstDay);
     const dayOfWeek = startDate.getDay();
     const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
@@ -49,7 +48,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     const weeks: Date[][] = [];
     let currentDate = new Date(startDate);
     
-    // Generate 6 weeks to ensure full month coverage
     for (let week = 0; week < 6; week++) {
       const weekDates: Date[] = [];
       for (let day = 0; day < 7; day++) {
@@ -58,7 +56,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
       }
       weeks.push(weekDates);
       
-      // Stop if we've passed the last day of the month and completed a full week
       if (weekDates[6] > lastDay && weekDates[0].getMonth() === monthIndex + 1) {
         break;
       }
@@ -67,11 +64,10 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     return weeks;
   };
 
-  // Get the week (Monday to Sunday) for the selected date
   const getWeekDates = (date: Date): Date[] => {
     const dateCopy = new Date(date);
     const day = dateCopy.getDay();
-    const diff = dateCopy.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    const diff = dateCopy.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(dateCopy);
     monday.setDate(diff);
     const week: Date[] = [];
@@ -86,7 +82,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
   const monthWeeks = getMonthWeeks(currentMonth);
   const weekDates = getWeekDates(selectedDate);
 
-  // Get week number (ISO week number)
   const getWeekNumber = (date: Date): number => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
@@ -120,7 +115,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() + (direction === 'next' ? 1 : -1));
     setCurrentMonth(newMonth);
-    // Update selected date to first day of new month
     onWeekChange(new Date(newMonth));
   };
 
@@ -155,28 +149,36 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
 
   const renderWeekView = () => (
     <>
-      {/* Week Navigation */}
-      <View style={styles.weekNavigation}>
-        <TouchableOpacity onPress={() => navigateWeek('prev')} style={styles.navButton}>
-          <Text style={styles.navButtonText}>&lt;</Text>
-        </TouchableOpacity>
-        <Text style={styles.weekRange}>{getWeekRange()}</Text>
-        <TouchableOpacity onPress={() => navigateWeek('next')} style={styles.navButton}>
-          <Text style={styles.navButtonText}>&gt;</Text>
-        </TouchableOpacity>
-      </View>
+      <div className="flex flex-row justify-between items-center mb-4">
+        <button
+          onClick={() => navigateWeek('prev')}
+          className="p-1 min-w-[32px] text-center hover:bg-card/50 rounded transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4 text-text" />
+        </button>
+        <Text className="text-base font-semibold text-text">
+          {getWeekRange()}
+        </Text>
+        <button
+          onClick={() => navigateWeek('next')}
+          className="p-1 min-w-[32px] text-center hover:bg-card/50 rounded transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-text" />
+        </button>
+      </div>
 
-      {/* Week Calendar */}
-      <View style={styles.calendar}>
-        <View style={styles.dayNamesRowWeek}>
+      <div className="w-full">
+        <div className="flex flex-row mb-2">
           {dayNames.map((day) => (
-            <View key={day} style={styles.dayNameCell}>
-              <Text style={styles.dayNameText}>{day}</Text>
-            </View>
+            <div key={day} className="flex-1 text-center">
+              <Text className="text-xs font-semibold text-subtle-text uppercase">
+                {day}
+              </Text>
+            </div>
           ))}
-        </View>
+        </div>
 
-        <View style={styles.daysRow}>
+        <div className="flex flex-row">
           {weekDates.map((date) => {
             const dateKey = formatDateKey(date);
             const workout = hasWorkout(date);
@@ -184,91 +186,103 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
             const today = isToday(date);
 
             return (
-              <TouchableOpacity
+              <button
                 key={dateKey}
-                style={[
-                  styles.dayCell,
-                  styles.dayCellWeek,
-                  selected && styles.dayCellSelected,
-                  today && !selected && styles.dayCellToday,
-                ]}
-                onPress={() => onDateChange(date)}
+                onClick={() => onDateChange(date)}
+                className={cn(
+                  'flex-1 aspect-square flex flex-col items-center justify-center rounded-md m-0.5 relative min-h-[60px] transition-colors',
+                  selected && 'bg-primary/30',
+                  today && !selected && 'bg-background',
+                  !today && !selected && 'hover:bg-card/50'
+                )}
               >
                 <Text
-                  style={[
-                    styles.dayNumber,
-                    selected && styles.dayNumberSelected,
-                    today && !selected && styles.dayNumberToday,
-                  ]}
+                  className={cn(
+                    'text-sm font-medium',
+                    selected && 'text-text font-bold',
+                    today && !selected && 'text-primary font-bold',
+                    !selected && !today && 'text-text'
+                  )}
                 >
                   {date.getDate()}
                 </Text>
                 {workout && (
-                  <View style={styles.workoutIndicators}>
-                    <View
-                      style={[
-                        styles.workoutDot,
-                        selected && styles.workoutDotSelected,
-                      ]}
+                  <div className="absolute bottom-1 flex flex-row gap-0.5 items-center justify-center">
+                    <div
+                      className={cn(
+                        'w-1 h-1 rounded-full',
+                        selected ? 'bg-text' : 'bg-primary'
+                      )}
                     />
-                    <View
-                      style={[
-                        styles.workoutDot,
-                        selected && styles.workoutDotSelected,
-                      ]}
+                    <div
+                      className={cn(
+                        'w-1 h-1 rounded-full',
+                        selected ? 'bg-text' : 'bg-primary'
+                      )}
                     />
-                  </View>
+                  </div>
                 )}
-              </TouchableOpacity>
+              </button>
             );
           })}
-        </View>
-      </View>
+        </div>
+      </div>
     </>
   );
 
   const renderMonthView = () => (
     <>
-      {/* Month Navigation */}
-      <View style={styles.monthNavigation}>
-        <Text style={styles.monthYear}>
+      <div className="flex flex-row justify-between items-center mb-4">
+        <Text className="text-lg font-bold text-text">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </Text>
-        <View style={styles.navControls}>
-          <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
-            <Text style={styles.navButtonText}>&lt;</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={goToToday} style={styles.todayButton}>
-            <Text style={styles.todayButtonText}>TODAY</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
-            <Text style={styles.navButtonText}>&gt;</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        <div className="flex flex-row items-center gap-3">
+          <button
+            onClick={() => navigateMonth('prev')}
+            className="p-1 min-w-[32px] text-center hover:bg-card/50 rounded transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 text-text" />
+          </button>
+          <button
+            onClick={goToToday}
+            className="px-3 py-1.5 rounded-md bg-background text-xs font-semibold text-text hover:bg-card/50 transition-colors"
+          >
+            TODAY
+          </button>
+          <button
+            onClick={() => navigateMonth('next')}
+            className="p-1 min-w-[32px] text-center hover:bg-card/50 rounded transition-colors"
+          >
+            <ChevronRight className="w-4 h-4 text-text" />
+          </button>
+        </div>
+      </div>
 
-      {/* Month Calendar Grid */}
-      <View style={styles.calendar}>
-        {/* Day names header */}
-        <View style={styles.dayNamesRow}>
-          <View style={styles.weekNumberHeader}>
-            <Text style={styles.weekNumberHeaderText}>W</Text>
-          </View>
+      <div className="w-full">
+        <div className="flex flex-row mb-2 pl-7">
+          <div className="w-7 -ml-7 text-center">
+            <Text className="text-xs font-semibold text-subtle-text uppercase">
+              W
+            </Text>
+          </div>
           {dayNames.map((day) => (
-            <View key={day} style={styles.dayNameCell}>
-              <Text style={styles.dayNameText}>{day}</Text>
-            </View>
+            <div key={day} className="flex-1 text-center">
+              <Text className="text-xs font-semibold text-subtle-text uppercase">
+                {day}
+              </Text>
+            </div>
           ))}
-        </View>
+        </div>
 
-        {/* Weeks */}
         {monthWeeks.map((week, weekIndex) => {
           const weekNumber = getWeekNumber(week[0]);
           return (
-            <View key={weekIndex} style={styles.weekRow}>
-              <View style={styles.weekNumberCell}>
-                <Text style={styles.weekNumberText}>W{weekNumber}</Text>
-              </View>
+            <div key={weekIndex} className="flex flex-row mb-1 items-center">
+              <div className="w-7 mr-1 text-center flex items-center justify-center">
+                <Text className="text-xs font-semibold text-subtle-text">
+                  W{weekNumber}
+                </Text>
+              </div>
               {week.map((date) => {
                 const dateKey = formatDateKey(date);
                 const workout = hasWorkout(date);
@@ -277,270 +291,87 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
                 const isCurrent = isCurrentMonth(date);
 
                 return (
-                  <TouchableOpacity
+                  <button
                     key={dateKey}
-                    style={[
-                      styles.dayCell,
-                      selected && styles.dayCellSelected,
-                      today && !selected && styles.dayCellToday,
-                      !isCurrent && styles.dayCellOtherMonth,
-                    ]}
-                    onPress={() => {
+                    onClick={() => {
                       onDateChange(date);
-                      // Update month if clicking on a date from another month
                       if (!isCurrent) {
                         setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
                       }
                     }}
+                    className={cn(
+                      'flex-1 aspect-square flex flex-col items-center justify-center rounded-md m-0.5 relative min-h-[36px] transition-colors',
+                      selected && 'bg-primary/30',
+                      today && !selected && 'bg-background',
+                      !isCurrent && 'opacity-40',
+                      !today && !selected && isCurrent && 'hover:bg-card/50'
+                    )}
                   >
                     <Text
-                      style={[
-                        styles.dayNumber,
-                        selected && styles.dayNumberSelected,
-                        today && !selected && styles.dayNumberToday,
-                        !isCurrent && styles.dayNumberOtherMonth,
-                      ]}
+                      className={cn(
+                        'text-sm font-medium',
+                        selected && 'text-text font-bold',
+                        today && !selected && 'text-primary font-bold',
+                        !isCurrent && 'opacity-50',
+                        !selected && !today && isCurrent && 'text-text'
+                      )}
                     >
                       {date.getDate()}
                     </Text>
                     {workout && (
-                      <View style={styles.workoutIndicators}>
-                        <View
-                          style={[
-                            styles.workoutDot,
-                            selected && styles.workoutDotSelected,
-                          ]}
+                      <div className="absolute bottom-1 flex flex-row gap-0.5 items-center justify-center">
+                        <div
+                          className={cn(
+                            'w-1 h-1 rounded-full',
+                            selected ? 'bg-text' : 'bg-primary'
+                          )}
                         />
-                        <View
-                          style={[
-                            styles.workoutDot,
-                            selected && styles.workoutDotSelected,
-                          ]}
+                        <div
+                          className={cn(
+                            'w-1 h-1 rounded-full',
+                            selected ? 'bg-text' : 'bg-primary'
+                          )}
                         />
-                      </View>
+                      </div>
                     )}
-                  </TouchableOpacity>
+                  </button>
                 );
               })}
-            </View>
+            </div>
           );
         })}
-      </View>
+      </div>
     </>
   );
 
   return (
-    <View style={styles.container}>
-      {/* View Mode Toggle */}
-      <View style={styles.viewModeToggle}>
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'week' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('week')}
+    <Card className="p-4 mb-4">
+      <div className="flex flex-row bg-background rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setViewMode('week')}
+          className={cn(
+            'flex-1 py-2 px-4 rounded-md text-center transition-colors',
+            viewMode === 'week' ? 'bg-primary text-background' : 'text-text hover:bg-card/50'
+          )}
         >
-          <Text style={[styles.viewModeText, viewMode === 'week' && styles.viewModeTextActive]}>
+          <Text className={cn('text-sm font-semibold', viewMode === 'week' && 'text-background')}>
             Week
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'month' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('month')}
+        </button>
+        <button
+          onClick={() => setViewMode('month')}
+          className={cn(
+            'flex-1 py-2 px-4 rounded-md text-center transition-colors',
+            viewMode === 'month' ? 'bg-primary text-background' : 'text-text hover:bg-card/50'
+          )}
         >
-          <Text style={[styles.viewModeText, viewMode === 'month' && styles.viewModeTextActive]}>
+          <Text className={cn('text-sm font-semibold', viewMode === 'month' && 'text-background')}>
             Month
           </Text>
-        </TouchableOpacity>
-      </View>
+        </button>
+      </div>
 
       {viewMode === 'week' ? renderWeekView() : renderMonthView()}
-    </View>
+    </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  viewModeToggle: {
-    flexDirection: 'row',
-    backgroundColor: THEME.background,
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 16,
-  },
-  viewModeButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  viewModeButtonActive: {
-    backgroundColor: THEME.primary,
-  },
-  viewModeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  viewModeTextActive: {
-    color: THEME.background,
-  },
-  monthNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  weekNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  monthYear: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.text,
-  },
-  weekRange: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  navControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  navButton: {
-    padding: 4,
-    minWidth: 32,
-    alignItems: 'center',
-  },
-  navButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.text,
-  },
-  todayButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: THEME.background,
-  },
-  todayButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  calendar: {
-    width: '100%',
-  },
-  dayNamesRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    paddingLeft: 28, // Space for week number column
-  },
-  dayNamesRowWeek: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  weekNumberHeader: {
-    width: 28,
-    alignItems: 'center',
-    marginRight: -28,
-  },
-  weekNumberHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.subtleText,
-    textTransform: 'uppercase',
-  },
-  dayNameCell: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  dayNameText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: THEME.subtleText,
-    textTransform: 'uppercase',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-    alignItems: 'center',
-  },
-  weekNumberCell: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  weekNumberText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: THEME.subtleText,
-  },
-  dayCell: {
-    flex: 1,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 6,
-    margin: 2,
-    position: 'relative',
-    minHeight: 36,
-  },
-  dayCellSelected: {
-    backgroundColor: 'rgba(255, 193, 7, 0.3)', // Light beige/yellow
-  },
-  dayCellToday: {
-    backgroundColor: THEME.background,
-  },
-  dayCellOtherMonth: {
-    opacity: 0.4,
-  },
-  dayCellWeek: {
-    minHeight: 60,
-  },
-  daysRow: {
-    flexDirection: 'row',
-  },
-  dayNumber: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: THEME.text,
-  },
-  dayNumberSelected: {
-    color: THEME.text,
-    fontWeight: 'bold',
-  },
-  dayNumberToday: {
-    color: THEME.primary,
-    fontWeight: 'bold',
-  },
-  dayNumberOtherMonth: {
-    opacity: 0.5,
-  },
-  workoutIndicators: {
-    position: 'absolute',
-    bottom: 2,
-    flexDirection: 'row',
-    gap: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  workoutDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: THEME.primary,
-  },
-  workoutDotSelected: {
-    backgroundColor: THEME.text,
-  },
-});

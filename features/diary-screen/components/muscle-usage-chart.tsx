@@ -1,9 +1,9 @@
+'use client';
+
 import { api } from '@/convex/_generated/api';
-import { exerciseMuscleMap } from '@/shared/constants/muscle-mapping';
-import { THEME } from '@/shared/theme/colours';
 import { useQuery } from 'convex/react';
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, Text, Card } from '@/lib/ui/components';
 
 interface MuscleUsageChartProps {
   workoutLogs: Array<{
@@ -41,24 +41,20 @@ export const MuscleUsageChart: React.FC<MuscleUsageChartProps> = ({ workoutLogs 
         const exerciseName = perf.exerciseName;
         const normalizedName = normalizeExerciseName(exerciseName);
         
-        // Find muscles from custom exercises first
         let muscles: string[] = [];
         if (customTemplates) {
           const customExercise = customTemplates.find(
-            ex => normalizeExerciseName(ex.exerciseName) === normalizedName
+            ex => ex.exercise?.exerciseName && normalizeExerciseName(ex.exercise.exerciseName) === normalizedName
           );
           if (customExercise?.exercise?.muscles) {
             muscles = customExercise.exercise.muscles;
           }
         }
         
-        // If not found in custom, check standard exercise mappings from database
         if (muscles.length === 0 && exerciseMuscleMappings) {
-          // Find exact match first
           if (exerciseMuscleMappings[exerciseName]) {
             muscles = exerciseMuscleMappings[exerciseName];
           } else {
-            // Try normalized match
             const matchedKey = Object.keys(exerciseMuscleMappings).find(
               key => normalizeExerciseName(key) === normalizedName
             );
@@ -67,18 +63,7 @@ export const MuscleUsageChart: React.FC<MuscleUsageChartProps> = ({ workoutLogs 
             }
           }
         }
-        
-        // Fallback to old constant file if database doesn't have data yet
-        if (muscles.length === 0) {
-          const mappedExercise = exerciseMuscleMap.find(
-            ex => normalizeExerciseName(ex.exercise) === normalizedName
-          );
-          if (mappedExercise) {
-            muscles = mappedExercise.muscles;
-          }
-        }
 
-        // Count sets for each muscle
         const setsCount = perf.sets.length;
         muscles.forEach(muscle => {
           if (!usage[muscle]) {
@@ -95,7 +80,7 @@ export const MuscleUsageChart: React.FC<MuscleUsageChartProps> = ({ workoutLogs 
   const sortedMuscles = useMemo(() => {
     return Object.entries(muscleUsage)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10); // Top 10 most used muscles
+      .slice(0, 10);
   }, [muscleUsage]);
 
   const maxUsage = useMemo(() => {
@@ -110,89 +95,37 @@ export const MuscleUsageChart: React.FC<MuscleUsageChartProps> = ({ workoutLogs 
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Muscle Group Usage</Text>
+    <Card className="p-4 mb-4">
+      <Text variant="h3" className="text-lg font-bold mb-4">
+        Muscle Group Usage
+      </Text>
       {sortedMuscles.length > 0 ? (
-        <View style={styles.chartContainer}>
+        <div className="space-y-3">
           {sortedMuscles.map(([muscle, sets]) => {
             const percentage = (sets / maxUsage) * 100;
             return (
-              <View key={muscle} style={styles.row}>
-                <Text style={styles.muscleLabel} numberOfLines={1}>
+              <div key={muscle} className="flex flex-row items-center gap-2">
+                <Text className="text-xs text-text font-medium min-w-[100px] max-w-[100px] truncate">
                   {formatMuscleName(muscle)}
                 </Text>
-                <View style={styles.barContainer}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { width: `${percentage}%` },
-                    ]}
+                <div className="flex-1 h-5 bg-background rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full min-w-[4px]"
+                    style={{ width: `${percentage}%` }}
                   />
-                </View>
-                <Text style={styles.valueLabel}>{sets}</Text>
-              </View>
+                </div>
+                <Text className="text-xs text-subtle-text font-semibold min-w-[30px] text-right">
+                  {sets}
+                </Text>
+              </div>
             );
           })}
-        </View>
+        </div>
       ) : (
-        <Text style={styles.emptyText}>No muscle data available</Text>
+        <Text className="text-sm text-subtle-text text-center py-10">
+          No muscle data available
+        </Text>
       )}
-    </View>
+    </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.text,
-    marginBottom: 16,
-  },
-  chartContainer: {
-    gap: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  muscleLabel: {
-    fontSize: 12,
-    color: THEME.text,
-    fontWeight: '500',
-    minWidth: 100,
-    maxWidth: 100,
-  },
-  barContainer: {
-    flex: 1,
-    height: 20,
-    backgroundColor: THEME.background,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  bar: {
-    height: '100%',
-    backgroundColor: THEME.primary,
-    borderRadius: 10,
-    minWidth: 4,
-  },
-  valueLabel: {
-    fontSize: 12,
-    color: THEME.subtleText,
-    fontWeight: '600',
-    minWidth: 30,
-    textAlign: 'right',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: THEME.subtleText,
-    textAlign: 'center',
-    paddingVertical: 40,
-  },
-});

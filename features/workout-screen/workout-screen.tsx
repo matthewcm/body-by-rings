@@ -1,30 +1,26 @@
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { THEME } from '@/shared/theme/colours';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, Text, ActivityIndicator, View, Button } from '@/lib/ui/components';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { ExerciseCard } from '@/features/workout-screen/components/exercise-card';
 import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
 import { isNotNull } from '@/shared/utils/array';
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { Id } from '@/convex/_generated/dataModel';
 
-
-
-
 export default function WorkoutScreen() {
   const router = useRouter();
-  const { phase, day } = useLocalSearchParams<{
-    phase: string,
-    day: string
-  }>();
+  const searchParams = useSearchParams();
+  const phase = searchParams.get('phase') || '1';
+  const day = searchParams.get('day') || '1';
+
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
-  const [workoutSummary, setWorkoutSummary] = useState<{ name?: string, summary?: string }[]>([]);
+  const [workoutSummary, setWorkoutSummary] = useState<{ name?: string; summary?: string }[]>([]);
 
   const templates = useQuery(api.workouts.get_all_workout_templates);
   const lastWorkout = useQuery(api.workouts.get_last_workout_log, { phase: parseInt(phase), day: parseInt(day) });
@@ -39,10 +35,12 @@ export default function WorkoutScreen() {
     if (exercisesForDay.length > 0) {
       const initialLog: PerformanceLogs = {};
       exercisesForDay.forEach(ex => {
-        const lastPerf = lastWorkout?.performance.find(p => p.exerciseName === ex.exerciseName);
+        const exerciseName = ex.exercise?.exerciseName || ex.exerciseName || '';
+        const lastPerf = lastWorkout?.performance.find(p => p.exerciseName === exerciseName);
         initialLog[ex._id] = {
-          exerciseName: ex.exerciseName,
-          sets: lastPerf?.sets.map(s => ({ ...s, completed: false })) || Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
+          exerciseName: exerciseName,
+          sets: lastPerf?.sets.map(s => ({ ...s, completed: false })) || 
+            Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
           notes: '',
           exerciseId: ex._id,
           lastPerformance: lastPerf ? {...lastPerf, exerciseId: ex._id} : undefined,
@@ -52,22 +50,22 @@ export default function WorkoutScreen() {
     }
   }, [exercisesForDay, lastWorkout]);
 
-  const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => setPerformanceLog(prev => ({ ...prev, [exerciseId]: data }));
+  const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => {
+    setPerformanceLog(prev => ({ ...prev, [exerciseId]: data }));
+  };
 
   const handleFinishPress = () => {
     const summary = Object.values(performanceLog).map(p => {
       if (!p.sets || p.sets.length === 0) return null;
       const setsCount = p.sets.length;
       const avgReps = (p.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0) / setsCount).toFixed(1);
-      const volumeReps = p.sets.reduce((sum, s) => sum + parseInt(s.reps), 0);
+      const volumeReps = p.sets.reduce((sum, s) => sum + (parseInt(s.reps, 10) || 0), 0);
       const setIntensity = p.sets.find((s) => s.intensity)?.intensity;
       return {
         name: p.exerciseName,
         summary: `${setsCount} sets, avg ${avgReps} reps @ ${setIntensity}, volume ${volumeReps}`,
       };
-
-    })
-      .filter(isNotNull);
+    }).filter(isNotNull);
 
     setWorkoutSummary(summary);
     setIsSummaryVisible(true);
@@ -86,7 +84,8 @@ export default function WorkoutScreen() {
           sets: p.sets
             .filter((s) => s.reps && s.reps.trim() !== '')
             .map(s => ({
-              reps: s.reps.trim(), intensity: s.intensity.trim()
+              reps: s.reps.trim(),
+              intensity: s.intensity.trim()
             }))
         }))
         .filter(p => p.sets.length > 0)
@@ -94,25 +93,35 @@ export default function WorkoutScreen() {
     try {
       await logWorkout(finalLog);
       setIsSummaryVisible(false);
-      router.navigate({pathname: '(home)'});
+      router.push('/');
     } catch (error) {
-      Alert.alert("Error", "Could not save workout.",);
-      console.error("Error saving workout:", error);
+      alert('Could not save workout.');
+      console.error('Error saving workout:', error);
     } finally {
       setIsSaving(false);
     }
   };
 
   if (templates === undefined) {
-    return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color={THEME.primary} /></SafeAreaView>;
+    return (
+      <View className="min-h-screen flex items-center justify-center bg-background">
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{
-        title: 'Log Workout',
-        headerRight: () => (<TouchableOpacity style={styles.finishButton} onPress={handleFinishPress} disabled={isSaving}><Text style={styles.finishButtonText}>Finish</Text></TouchableOpacity>),
-      }} />
+    <ScrollView className="min-h-screen bg-background pb-24">
+      <div className="flex flex-row justify-end px-5 py-4">
+        <Button
+          variant="primary"
+          onClick={handleFinishPress}
+          disabled={isSaving}
+          className="px-5 py-2 rounded-full"
+        >
+          Finish
+        </Button>
+      </div>
 
       <WorkoutSummaryModal
         onConfirm={confirmAndSaveWorkout}
@@ -122,23 +131,23 @@ export default function WorkoutScreen() {
         isSaving={isSaving}
       />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {exercisesForDay.map(ex => (
-          <ExerciseCard key={ex._id} exercise={ex} performanceData={performanceLog[ex._id]} onUpdate={handleUpdateExercise} />
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+      <View className="pb-24">
+        {exercisesForDay.map(ex => {
+          const exerciseName = ex.exercise?.exerciseName || ex.exerciseName || '';
+          return (
+            <ExerciseCard
+              key={ex._id}
+              exercise={{ ...ex, exerciseName }}
+              performanceData={performanceLog[ex._id] || {
+                sets: Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
+                exerciseName,
+                exerciseId: ex._id
+              }}
+              onUpdate={handleUpdateExercise}
+            />
+          );
+        })}
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  finishButton: { backgroundColor: THEME.primary, paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginRight: 20 },
-  finishButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  statsBar: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderBottomWidth: 1, borderColor: THEME.border },
-  statItem: { alignItems: 'center' },
-  statLabel: { color: THEME.placeholder, fontSize: 12, textTransform: 'uppercase' },
-  statValue: { color: THEME.text, fontSize: 18, fontWeight: '600' },
-});
-
-

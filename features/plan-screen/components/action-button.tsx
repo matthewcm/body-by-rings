@@ -1,35 +1,63 @@
+'use client';
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { View, Text, Card } from '@/lib/ui/components';
+import { PlusCircle, ChevronRight, Flag, Trash2, Sprout } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
+interface ActionButtonProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onPress?: () => void;
+  disabled?: boolean;
+}
 
-export const ActionButton = ({ icon, title, subtitle, onPress, disabled = false }:{
-  icon: string,
-  title: string,
-  subtitle: string,
-  onPress?: () => void,
-  disabled?: boolean
-}) => (
-    <TouchableOpacity style={[styles.card, styles.actionButton, disabled && styles.disabledButton]} onPress={onPress} disabled={disabled}>
-        <FontAwesome5 name={icon} size={24} color={disabled ? THEME.placeholder : THEME.primary} />
-        <View style={{ flex: 1, marginLeft: 16 }}>
-            <Text style={[styles.actionTitle, disabled && { color: THEME.placeholder }]}>{title}</Text>
-            <Text style={styles.actionSubtitle}>{subtitle}</Text>
-        </View>
-        <FontAwesome5 name="chevron-right" size={16} color={THEME.placeholder} />
-    </TouchableOpacity>
+const iconMap: Record<string, React.ReactNode> = {
+  'plus-circle': <PlusCircle className="w-6 h-6" />,
+  'flag': <Flag className="w-6 h-6" />,
+  'trash': <Trash2 className="w-6 h-6" />,
+  'seedling': <Sprout className="w-6 h-6" />,
+};
+
+export const ActionButton = ({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  disabled = false,
+}: ActionButtonProps) => (
+  <button
+    onClick={onPress}
+    disabled={disabled}
+    className={cn(
+      'w-full text-left transition-opacity',
+      disabled && 'opacity-50 cursor-not-allowed'
+    )}
+  >
+    <Card
+      className={cn(
+        'p-4 mb-4 flex flex-row items-center',
+        disabled && 'bg-[#2a2a2a]'
+      )}
+    >
+      <div className={cn(disabled ? 'text-placeholder' : 'text-primary')}>
+        {iconMap[icon] || <PlusCircle className="w-6 h-6" />}
+      </div>
+      <View className="flex-1 ml-4">
+        <Text
+          className={cn(
+            'text-base font-bold',
+            disabled ? 'text-placeholder' : 'text-text'
+          )}
+        >
+          {title}
+        </Text>
+        <Text className="text-placeholder text-xs mt-0.5">
+          {subtitle}
+        </Text>
+      </View>
+      <ChevronRight className="w-4 h-4 text-placeholder" />
+    </Card>
+  </button>
 );
-
-const styles = StyleSheet.create({
-    card: { backgroundColor: THEME.card, borderRadius: 12, padding: 16, marginBottom: 16 },
-    activeCard: { borderWidth: 2, borderColor: THEME.primary },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.text, marginLeft: 12 },
-    cardDescription: { fontSize: 14, color: THEME.subtleText, marginTop: 4, lineHeight: 20 },
-    actionButton: { flexDirection: 'row', alignItems: 'center' },
-    disabledButton: { backgroundColor: '#2a2a2a' },
-    actionTitle: { fontSize: 16, fontWeight: 'bold', color: THEME.text },
-    actionSubtitle: { fontSize: 13, color: THEME.placeholder, marginTop: 2 },
-});
-

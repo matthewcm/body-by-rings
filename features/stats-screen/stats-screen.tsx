@@ -1,27 +1,22 @@
-import { FontAwesome5 } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+'use client';
 
+import { api } from '@/convex/_generated/api';
 import { ProgressionTable } from '@/features/stats-screen/components/progression-table/progression-table';
+import { ActivityIndicator, Button, Card, Input, Modal, ScrollView, Text, View } from '@/lib/ui/components';
+import { cn } from '@/lib/utils';
 import { THEME } from '@/shared/theme/colours';
 import { generateHexShades } from '@/shared/utils/colors';
-import { useMutation, useQuery } from "convex/react";
-import Body from "react-native-body-highlighter";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { api } from "../../convex/_generated/api";
-
-
-
+import { useMutation, useQuery } from 'convex/react';
+import { Edit, Save, Search, Star, X, XCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Body from 'react-body-highlighter';
 
 // Normalize exercise name: lowercase and remove pluralization
 const normalizeExerciseName = (name: string): string => {
   let normalized = name.toLowerCase().trim();
-  // Remove trailing 'es' if word is long enough (e.g., "thrusters" -> "thruster")
   if (normalized.length > 3 && normalized.endsWith('es')) {
     normalized = normalized.slice(0, -2);
-  }
-  // Remove trailing 's' if word is long enough (e.g., "thrusters" -> "thruster", but keep "push" as "push")
-  else if (normalized.length > 2 && normalized.endsWith('s')) {
+  } else if (normalized.length > 2 && normalized.endsWith('s')) {
     normalized = normalized.slice(0, -1);
   }
   return normalized;
@@ -37,6 +32,9 @@ export default function StatsScreen() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'standard' | 'custom'>('all');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const exerciseListRef = useRef<HTMLDivElement>(null);
   
   const updateExerciseName = useMutation(api.workouts.update_custom_exercise_name);
   const updateExerciseMuscles = useMutation(api.workouts.update_custom_exercise_muscles);
@@ -54,21 +52,28 @@ export default function StatsScreen() {
   // Get the current custom exercise data when selected
   const currentCustomExercise = useMemo(() => {
     if (!customTemplates || !selectedExercise) return null;
-    const template = customTemplates.find(ex => ex.exerciseName === selectedExercise);
+    const template = customTemplates.find(ex => 
+      ex.exercise?.exerciseName === selectedExercise || ex.exerciseName === selectedExercise
+    );
     if (!template) return null;
     
-    // Get exercise data from catalog (via the joined exercise property)
     return {
       ...template,
       muscles: template.exercise?.muscles || [],
       exerciseId: template.exerciseId || null,
+      exerciseName: template.exercise?.exerciseName || template.exerciseName || selectedExercise,
     };
   }, [customTemplates, selectedExercise]);
 
-
-  const uniqueExercises = useMemo(() => {
+  const uniqueExercises = useMemo<string[]>(() => {
     if (!templates) return [];
-    return [...new Set(templates.map(t => t.exerciseName))];
+    const names = templates
+      .map(t => {
+        const name = t.exercise?.exerciseName || t.exerciseName;
+        return typeof name === 'string' ? name : null;
+      })
+      .filter((name): name is string => name !== null);
+    return [...new Set(names)];
   }, [templates]);
 
   const uniqueCustomExercises = useMemo(() => {
@@ -76,31 +81,33 @@ export default function StatsScreen() {
     
     const normalizedMap = new Map<string, string>();
     customTemplates.forEach(t => {
-      const normalizedKey = normalizeExerciseName(t.exerciseName);
-      if (!normalizedMap.has(normalizedKey)) {
-        normalizedMap.set(normalizedKey, t.exerciseName);
+      const exerciseName = t.exercise?.exerciseName || t.exerciseName;
+      if (exerciseName) {
+        const normalizedKey = normalizeExerciseName(exerciseName);
+        if (!normalizedMap.has(normalizedKey)) {
+          normalizedMap.set(normalizedKey, exerciseName);
+        }
       }
     });
     return Array.from(normalizedMap.values()).sort();
   }, [customTemplates]);
 
   // Combined and filtered exercises
-  const allExercises = useMemo(() => {
-    const standard = uniqueExercises.map(ex => ({ name: ex, type: 'standard' as const }));
-    const custom = uniqueCustomExercises.map(ex => ({ name: ex, type: 'custom' as const }));
+  type ExerciseItem = { name: string; type: 'standard' | 'custom' };
+  const allExercises = useMemo<ExerciseItem[]>(() => {
+    const standard: ExerciseItem[] = uniqueExercises.map(ex => ({ name: ex, type: 'standard' as const }));
+    const custom: ExerciseItem[] = uniqueCustomExercises.map(ex => ({ name: ex, type: 'custom' as const }));
     return [...standard, ...custom].sort((a, b) => a.name.localeCompare(b.name));
   }, [uniqueExercises, uniqueCustomExercises]);
 
   // Filtered exercises based on search and filter
-  const filteredExercises = useMemo(() => {
+  const filteredExercises = useMemo<ExerciseItem[]>(() => {
     let filtered = allExercises;
 
-    // Apply type filter
     if (filterType !== 'all') {
       filtered = filtered.filter(ex => ex.type === filterType);
     }
 
-    // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(ex => 
@@ -113,7 +120,7 @@ export default function StatsScreen() {
 
   // Group exercises by first letter
   const exercisesByLetter = useMemo(() => {
-    const grouped: Record<string, typeof filteredExercises> = {};
+    const grouped: Record<string, ExerciseItem[]> = {};
     
     filteredExercises.forEach(ex => {
       const firstLetter = ex.name.charAt(0).toUpperCase();
@@ -123,7 +130,6 @@ export default function StatsScreen() {
       grouped[firstLetter].push(ex);
     });
 
-    // Sort letters and ensure exercises within each letter are sorted
     Object.keys(grouped).forEach(letter => {
       grouped[letter].sort((a, b) => a.name.localeCompare(b.name));
     });
@@ -137,21 +143,17 @@ export default function StatsScreen() {
   }, [exercisesByLetter]);
 
   useEffect(() => {
-    // Check if selected exercise still exists in filtered list
     if (selectedExercise && !allExercises.some(ex => ex.name === selectedExercise)) {
-      // Selected exercise no longer exists, select first available
       if (allExercises.length > 0) {
         setSelectedExercise(allExercises[0].name);
       } else {
         setSelectedExercise('');
       }
     } else if (!selectedExercise && allExercises.length > 0) {
-      // No exercise selected, select first available
       setSelectedExercise(allExercises[0].name);
     }
   }, [allExercises, selectedExercise]);
 
-  // Update editing state when exercise changes
   useEffect(() => {
     if (currentCustomExercise) {
       setEditingName(currentCustomExercise.exerciseName);
@@ -174,9 +176,11 @@ export default function StatsScreen() {
       }
       await updateExerciseMuscles({ exerciseName: editingName, muscles: selectedMuscles });
       setIsEditing(false);
-      Alert.alert('Success', 'Exercise updated successfully');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 2000);
     } catch (error) {
-      Alert.alert('Error', 'Failed to update exercise');
+      setShowErrorModal(true);
+      setTimeout(() => setShowErrorModal(false), 2000);
       console.error(error);
     }
   };
@@ -187,6 +191,14 @@ export default function StatsScreen() {
         ? prev.filter(m => m !== muscle)
         : [...prev, muscle]
     );
+  };
+
+  const scrollToLetter = (letter: string) => {
+    const element = document.getElementById(`letter-${letter}`);
+    if (element && exerciseListRef.current) {
+      const container = exerciseListRef.current;
+      container.scrollTop = element.offsetTop - container.offsetTop;
+    }
   };
 
   const tableData = useMemo(() => {
@@ -205,8 +217,8 @@ export default function StatsScreen() {
         }));
 
         const maxReps = Math.max(...numericSets.map(s => s.reps));
-        const maxIntensity = performance.sets.find(s => s.intensity)?.intensity
-        const totalVolume = numericSets.reduce((sum, s) => sum + (s.reps ), 0);
+        const maxIntensity = performance.sets.find(s => s.intensity)?.intensity;
+        const totalVolume = numericSets.reduce((sum, s) => sum + s.reps, 0);
 
         return {
           date: new Date(log.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
@@ -218,466 +230,320 @@ export default function StatsScreen() {
         };
       })
       .filter((a): a is NonNullable<typeof a> => a !== null)
-      .sort((a, b) => (b?.rawDate.getTime() || 0) - (a?.rawDate.getTime() || 0)); // Sort by most recent first
+      .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
   }, [logs, selectedExercise]);
 
   if (logs === undefined || templates === undefined) {
-    return <View style={[styles.container, { justifyContent: 'center' }]}><ActivityIndicator size="large" color={THEME.activityIndicator} /></View>;
+    return (
+      <View className="min-h-screen flex items-center justify-center bg-background">
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Progression</Text>
+    <ScrollView className="min-h-screen bg-background">
+      <View className="container mx-auto px-4 py-8">
+        <Text variant="h1" className="text-3xl font-bold text-center mb-4">
+          Progression
+        </Text>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <FontAwesome5 name="search" size={16} color={THEME.placeholder} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search exercises..."
-            placeholderTextColor={THEME.placeholder}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-placeholder" />
+          <Input
+            type="text"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search exercises..."
+            className="w-full pl-10 pr-10"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <FontAwesome5 name="times" size={14} color={THEME.placeholder} />
-            </TouchableOpacity>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-card/50 rounded"
+            >
+              <X className="w-3.5 h-3.5 text-placeholder" />
+            </button>
           )}
-        </View>
+        </div>
 
         {/* Filter Buttons */}
-        <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterChip, filterType === 'all' && styles.filterChipSelected]}
-            onPress={() => setFilterType('all')}
+        <div className="flex flex-row gap-2 mb-4 flex-wrap">
+          <button
+            onClick={() => setFilterType('all')}
+            className={cn(
+              'px-3 py-1.5 rounded-2xl border text-xs font-medium transition-colors',
+              filterType === 'all'
+                ? 'bg-primary border-primary text-background'
+                : 'bg-card border-border text-text hover:bg-card/80'
+            )}
           >
-            <Text style={[styles.filterChipText, filterType === 'all' && styles.filterChipTextSelected]}>
-              All ({allExercises.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, filterType === 'standard' && styles.filterChipSelected]}
-            onPress={() => setFilterType('standard')}
+            All ({allExercises.length})
+          </button>
+          <button
+            onClick={() => setFilterType('standard')}
+            className={cn(
+              'px-3 py-1.5 rounded-2xl border text-xs font-medium transition-colors',
+              filterType === 'standard'
+                ? 'bg-primary border-primary text-background'
+                : 'bg-card border-border text-text hover:bg-card/80'
+            )}
           >
-            <Text style={[styles.filterChipText, filterType === 'standard' && styles.filterChipTextSelected]}>
-              Standard ({uniqueExercises.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, filterType === 'custom' && styles.filterChipSelected]}
-            onPress={() => setFilterType('custom')}
+            Standard ({uniqueExercises.length})
+          </button>
+          <button
+            onClick={() => setFilterType('custom')}
+            className={cn(
+              'px-3 py-1.5 rounded-2xl border text-xs font-medium transition-colors',
+              filterType === 'custom'
+                ? 'bg-primary border-primary text-background'
+                : 'bg-card border-border text-text hover:bg-card/80'
+            )}
           >
-            <Text style={[styles.filterChipText, filterType === 'custom' && styles.filterChipTextSelected]}>
-              Custom ({uniqueCustomExercises.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
+            Custom ({uniqueCustomExercises.length})
+          </button>
+        </div>
 
         {/* Exercise List */}
         {filteredExercises.length > 0 ? (
-          <View style={styles.exerciseListContainer}>
+          <div className="flex flex-row mb-6 h-[400px] border border-border rounded-xl overflow-hidden bg-card">
             {/* Alphabetical Index */}
-            <View style={styles.indexContainer}>
+            <div className="w-8 border-r border-border bg-background flex flex-col">
               {Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)).map(letter => (
-                <View
+                <button
                   key={letter}
-                  style={[
-                    styles.indexLetter,
-                    availableLetters.includes(letter) && styles.indexLetterActive
-                  ]}
+                  onClick={() => scrollToLetter(letter)}
+                  className={cn(
+                    'py-1 px-2 text-center min-h-[28px] flex items-center justify-center transition-colors',
+                    availableLetters.includes(letter)
+                      ? 'bg-card text-primary font-semibold hover:bg-card/80'
+                      : 'text-placeholder cursor-not-allowed'
+                  )}
+                  disabled={!availableLetters.includes(letter)}
                 >
-                  <Text style={[
-                    styles.indexLetterText,
-                    availableLetters.includes(letter) && styles.indexLetterTextActive
-                  ]}>
-                    {letter}
-                  </Text>
-                </View>
+                  <Text className="text-xs">{letter}</Text>
+                </button>
               ))}
-            </View>
+            </div>
 
             {/* Exercise List */}
-            <ScrollView 
-              style={styles.exerciseList} 
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
+            <div
+              ref={exerciseListRef}
+              className="flex-1 overflow-y-auto p-3"
             >
               {availableLetters.map(letter => (
-                <View key={letter} style={styles.letterSection}>
-                  <Text style={styles.letterHeader}>{letter}</Text>
-                  {exercisesByLetter[letter].map((ex) => (
-                    <TouchableOpacity
-                      key={`${ex.type}-${ex.name}`}
-                      style={[styles.exerciseChip, selectedExercise === ex.name && styles.exerciseChipSelected]}
-                      onPress={() => setSelectedExercise(ex.name)}
-                    >
-                      <Text style={[styles.exerciseChipText, selectedExercise === ex.name && styles.exerciseChipTextSelected]}>
-                        {ex.name}
-                      </Text>
-                      {ex.type === 'custom' && (
-                        <FontAwesome5 
-                          name="star" 
-                          size={12} 
-                          color={selectedExercise === ex.name ? THEME.background : THEME.primary} 
-                          style={styles.customIcon} 
-                        />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <div key={letter} id={`letter-${letter}`} className="mb-4">
+                  <Text className="text-lg font-bold text-primary mb-2 pl-1">
+                    {letter}
+                  </Text>
+                  <div className="space-y-1.5">
+                    {exercisesByLetter[letter].map((ex) => (
+                      <button
+                        key={`${ex.type}-${ex.name}`}
+                        onClick={() => setSelectedExercise(ex.name)}
+                        className={cn(
+                          'w-full flex flex-row items-center justify-between px-3 py-2.5 rounded-lg border transition-colors',
+                          selectedExercise === ex.name
+                            ? 'bg-primary border-primary'
+                            : 'bg-background border-border hover:bg-card/50'
+                        )}
+                      >
+                        <Text className={cn(
+                          'text-[15px] flex-1 text-left',
+                          selectedExercise === ex.name ? 'text-background font-semibold' : 'text-text'
+                        )}>
+                          {ex.name}
+                        </Text>
+                        {ex.type === 'custom' && (
+                          <Star className={cn(
+                            'w-3 h-3 ml-2',
+                            selectedExercise === ex.name ? 'text-background' : 'text-primary'
+                          )} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
-            </ScrollView>
-          </View>
+            </div>
+          </div>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No exercises found</Text>
-            <Text style={styles.emptyStateSubtext}>Try adjusting your search or filter</Text>
-          </View>
+          <Card className="py-10 text-center mb-6">
+            <Text className="text-base font-semibold text-text mb-1">
+              No exercises found
+            </Text>
+            <Text className="text-sm text-subtle-text">
+              Try adjusting your search or filter
+            </Text>
+          </Card>
         )}
 
         {selectedExercise && (
-          <View style={styles.card}>
+          <Card className="p-4">
             {currentCustomExercise ? (
               <>
-                <View style={styles.exerciseHeader}>
-                  <View style={styles.exerciseNameRow}>
+                <div className="mb-4">
+                  <div className="flex flex-row justify-between items-center mb-3">
                     {isEditing ? (
-                      <TextInput
-                        style={styles.exerciseNameInput}
+                      <Input
+                        type="text"
                         value={editingName}
-                        onChangeText={setEditingName}
+                        onChange={(e) => setEditingName(e.target.value)}
                         placeholder="Exercise name"
+                        className="flex-1 text-lg font-bold mr-2"
                       />
                     ) : (
-                      <Text style={styles.chartTitle}>{selectedExercise}</Text>
+                      <Text variant="h3" className="text-lg font-bold flex-1">
+                        {selectedExercise}
+                      </Text>
                     )}
                     {!isEditing && (
-                      <TouchableOpacity 
-                        style={styles.editButton} 
-                        onPress={() => setIsEditing(true)}
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                        className="flex flex-row items-center gap-1.5"
                       >
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </Button>
                     )}
-                  </View>
+                  </div>
                   {isEditing && (
-                    <View style={styles.actionButtons}>
-                      <TouchableOpacity 
-                        style={styles.cancelButton} 
-                        onPress={() => {
+                    <div className="flex flex-row gap-2 justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
                           setIsEditing(false);
                           setEditingName(currentCustomExercise.exerciseName);
                           setSelectedMuscles(currentCustomExercise.muscles || []);
                         }}
+                        className="flex flex-row items-center gap-1.5"
                       >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.saveButton} 
-                        onPress={handleSaveExercise}
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Cancel</span>
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleSaveExercise}
+                        className="flex flex-row items-center gap-1.5 bg-success hover:bg-success/90"
                       >
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save</span>
+                      </Button>
+                    </div>
                   )}
-                </View>
+                </div>
 
                 {isEditing && (
-                  <View style={styles.muscleSection}>
-                    <Text style={styles.muscleSectionTitle}>Muscles Worked</Text>
-                    {Object.entries(muscleGroups).map(([groupName, muscles]) => (
-                      <View key={groupName} style={styles.muscleGroup}>
-                        <Text style={styles.muscleGroupTitle}>{groupName}</Text>
-                        <View style={styles.muscleChipContainer}>
-                          {muscles.map(muscle => (
-                            <TouchableOpacity
-                              key={muscle}
-                              style={[
-                                styles.muscleChip,
-                                selectedMuscles.includes(muscle) && styles.muscleChipSelected
-                              ]}
-                              onPress={() => toggleMuscle(muscle)}
-                            >
-                              <Text style={[
-                                styles.muscleChipText,
-                                selectedMuscles.includes(muscle) && styles.muscleChipTextSelected
-                              ]}>
+                  <div className="mb-5">
+                    <Text variant="h3" className="text-lg font-semibold mb-4">
+                      Muscles Worked
+                    </Text>
+                    <div className="space-y-4">
+                      {Object.entries(muscleGroups).map(([groupName, muscles]) => (
+                        <div key={groupName} className="mb-4">
+                          <Text className="text-sm font-semibold text-subtle-text mb-2 uppercase tracking-wide">
+                            {groupName}
+                          </Text>
+                          <div className="flex flex-row flex-wrap gap-1.5">
+                            {muscles.map(muscle => (
+                              <button
+                                key={muscle}
+                                onClick={() => toggleMuscle(muscle)}
+                                className={cn(
+                                  'px-2.5 py-1.5 rounded-xl border text-xs text-center min-w-[80px] transition-colors',
+                                  selectedMuscles.includes(muscle)
+                                    ? 'bg-primary border-primary text-background font-semibold'
+                                    : 'bg-background border-border text-text hover:bg-card/50'
+                                )}
+                              >
                                 {muscle.replace('-', ' ')}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    ))}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                     {selectedMuscles.length > 0 && (
-                      <View style={styles.selectedCount}>
-                        <Text style={styles.selectedCountText}>
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <Text className="text-sm italic text-subtle-text text-center">
                           {selectedMuscles.length} muscle{selectedMuscles.length !== 1 ? 's' : ''} selected
                         </Text>
-                      </View>
+                      </div>
                     )}
-                  </View>
+                  </div>
                 )}
 
                 {!isEditing && selectedMuscles.length > 0 && (
-                  <View style={styles.muscleMapContainer}>
-                    <View style={styles.muscleMapWrapper}>
+                  <div className="mb-5 flex flex-row justify-around items-center py-5 px-5 w-full">
+                    <div className="flex-1 flex items-center justify-center">
                       <Body
-                        data={selectedMuscles.map(slug => ({ slug: slug as any, intensity: 1 }))}
-                        gender="male"
-                        side="front"
-                        scale={0.5}
-                        border="#dfdfdf"
-                        colors={generateHexShades(THEME.primary, 6, 20)}
+                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles as any }]}
+                        type="anterior"
+                        bodyColor="#dfdfdf"
+                        highlightedColors={generateHexShades(THEME.primary, 6, 20)}
+                        style={{ maxWidth: '200px', width: '100%' }}
+                        svgStyle={{ width: '100%', height: 'auto' }}
                       />
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
                       <Body
-                        data={selectedMuscles.map(slug => ({ slug: slug as any, intensity: 1 }))}
-                        gender="male"
-                        side="back"
-                        scale={0.5}
-                        border="#dfdfdf"
-                        colors={generateHexShades(THEME.primary, 6, 20)}
+                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles as any }]}
+                        type="posterior"
+                        bodyColor="#dfdfdf"
+                        highlightedColors={generateHexShades(THEME.primary, 6, 20)}
+                        style={{ maxWidth: '200px', width: '100%' }}
+                        svgStyle={{ width: '100%', height: 'auto' }}
                       />
-                    </View>
-                  </View>
+                    </div>
+                  </div>
                 )}
               </>
             ) : (
-              <Text style={styles.chartTitle}>{selectedExercise}</Text>
+              <Text variant="h3" className="text-lg font-bold mb-4">
+                {selectedExercise}
+              </Text>
             )}
             <ProgressionTable data={tableData} />
-          </View>
+          </Card>
         )}
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* Success Modal */}
+        <Modal
+          visible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          className="max-w-sm"
+        >
+          <div className="p-6 text-center">
+            <Text variant="h3" className="text-lg font-bold mb-2 text-success">
+              Success!
+            </Text>
+            <Text className="text-sm text-subtle-text">
+              Exercise updated successfully
+            </Text>
+          </div>
+        </Modal>
+
+        {/* Error Modal */}
+        <Modal
+          visible={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          className="max-w-sm"
+        >
+          <div className="p-6 text-center">
+            <Text variant="h3" className="text-lg font-bold mb-2 text-error">
+              Error
+            </Text>
+            <Text className="text-sm text-subtle-text">
+              Failed to update exercise
+            </Text>
+          </div>
+        </Modal>
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: THEME.background },
-  container: { padding: 16 },
-  header: { fontSize: 32, fontWeight: 'bold', color: THEME.text, marginBottom: 16, textAlign: 'center' },
-  subHeader: { fontSize: 22, fontWeight: '600', color: THEME.text, marginBottom: 16 },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  searchIcon: { marginRight: 8 },
-  searchInput: {
-    flex: 1,
-    color: THEME.text,
-    fontSize: 16,
-    padding: 0,
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  filterChip: {
-    backgroundColor: THEME.card,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  filterChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  filterChipText: {
-    color: THEME.text,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  filterChipTextSelected: {
-    color: THEME.background,
-    fontWeight: 'bold',
-  },
-  sectionHeader: {
-    width: '100%',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: THEME.subtleText,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  emptyState: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 4,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: THEME.subtleText,
-  },
-  card: { backgroundColor: THEME.card, borderRadius: 12, padding: 16 },
-  exerciseHeader: { marginBottom: 16 },
-  exerciseNameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  chartTitle: { fontSize: 18, fontWeight: 'bold', color: THEME.text, textAlign: 'left', flex: 1 },
-  exerciseNameInput: { 
-    flex: 1, 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: THEME.text, 
-    backgroundColor: THEME.background, 
-    padding: 12, 
-    borderRadius: 8,
-    minHeight: 44,
-  },
-  actionButtons: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
-  editButton: { backgroundColor: THEME.primary, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 },
-  editButtonText: { color: THEME.background, fontWeight: 'bold', fontSize: 14 },
-  saveButton: { backgroundColor: THEME.success || '#34C759', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 },
-  saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  cancelButton: { backgroundColor: THEME.error, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 },
-  cancelButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  muscleSection: { marginBottom: 20 },
-  muscleSectionTitle: { fontSize: 18, fontWeight: '600', color: THEME.text, marginBottom: 16 },
-  muscleGroup: { marginBottom: 16 },
-  muscleGroupTitle: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: THEME.subtleText, 
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  muscleChipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  muscleChip: { 
-    backgroundColor: THEME.background, 
-    paddingVertical: 6, 
-    paddingHorizontal: 10, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: THEME.border,
-    minWidth: 80,
-  },
-  muscleChipSelected: { backgroundColor: THEME.primary, borderColor: THEME.primary },
-  muscleChipText: { color: THEME.text, fontSize: 13, textAlign: 'center' },
-  muscleChipTextSelected: { color: THEME.background, fontWeight: '600' },
-  selectedCount: { 
-    marginTop: 12, 
-    paddingTop: 12, 
-    borderTopWidth: 1, 
-    borderTopColor: THEME.border 
-  },
-  selectedCountText: { 
-    color: THEME.subtleText, 
-    fontSize: 14, 
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  muscleMapContainer: { marginBottom: 20, alignItems: 'center' },
-  muscleMapWrapper: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', width: '100%' },
-  exerciseListContainer: {
-    flexDirection: 'row',
-    marginBottom: 24,
-    height: 400,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: THEME.card,
-  },
-  indexContainer: {
-    width: 32,
-    borderRightWidth: 1,
-    borderRightColor: THEME.border,
-    backgroundColor: THEME.background,
-  },
-  indexLetter: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 28,
-  },
-  indexLetterActive: {
-    backgroundColor: THEME.card,
-  },
-  indexLetterText: {
-    fontSize: 12,
-    color: THEME.placeholder,
-    fontWeight: '600',
-  },
-  indexLetterTextActive: {
-    color: THEME.primary,
-  },
-  exerciseList: {
-    flex: 1,
-    padding: 12,
-  },
-  letterSection: {
-    marginBottom: 16,
-  },
-  letterHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.primary,
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  exerciseChip: {
-    backgroundColor: THEME.background,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  exerciseChipSelected: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  exerciseChipText: {
-    color: THEME.text,
-    fontSize: 15,
-    flex: 1,
-  },
-  exerciseChipTextSelected: {
-    color: THEME.background,
-    fontWeight: '600',
-  },
-  customIcon: { marginLeft: 8 },
-  phaseSelectorContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: THEME.card, borderRadius: 12, padding: 6, marginBottom: 24 },
-  phaseButton: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  phaseButtonSelected: { backgroundColor: THEME.primary },
-  phaseButtonText: { color: THEME.placeholder, fontWeight: 'bold', fontSize: 16 },
-  phaseButtonTextSelected: { color: THEME.background },
-  tableContainer: { width: '100%' },
-  tableHeader: { backgroundColor: '#333333', borderTopLeftRadius: 8, borderTopRightRadius: 8 },
-  tableRow: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: THEME.border },
-  tableCell: { flex: 1, color: THEME.text, textAlign: 'center', fontSize: 12 },
-  headerText: { fontWeight: 'bold', color: THEME.primary },
-  tablePlaceholder: { color: THEME.placeholder, fontStyle: 'italic', paddingVertical: 40, textAlign: 'center' },
-});
-

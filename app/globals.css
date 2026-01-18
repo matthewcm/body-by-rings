@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ionic Framework Core CSS
+@import '@ionic/react/css/core.css';
+
+/* Ionic Framework CSS Utilities */
+/* @import '@ionic/react/css/normalize.css';
+@import '@ionic/react/css/structure.css';
+@import '@ionic/react/css/typography.css';
+@import '@ionic/react/css/display.css'; */
+
+/* Ionic Framework Optional CSS */
+/* @import '@ionic/react/css/padding.css';
+@import '@ionic/react/css/float-elements.css';
+@import '@ionic/react/css/text-alignment.css';
+@import '@ionic/react/css/text-transformation.css';
+@import '@ionic/react/css/flex-utils.css';
+@import '@ionic/react/css/grid.css'; */ */
+
+:root {
+  --background: #121212;
+  --card: #1E1E1E;
+  --text: #E0E0E0;
+  --primary: #5D5FEF;
+  --secondary: #4b5563;
+  --success: #34C759;
+  --error: #CF6679;
+  --border: #333333;
+  --placeholder: #8E8E93;
+  --subtle-text: #A0A0A0;
+  --activity-indicator: #BB86FC;
+  --surface: #bb87fc;
+  --radius: 0.5rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  color: var(--text);
+  background: var(--background);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

@@ -1,6 +1,7 @@
+'use client';
+
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { THEME } from '@/shared/theme/colours';
+import { View, Text, Card } from '@/lib/ui/components';
 
 interface PerformanceChartProps {
   workoutLogs: Array<{
@@ -21,7 +22,6 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ workoutLogs 
       };
     }
 
-    // Group workouts by week
     const weeklyData: Record<string, number> = {};
     
     workoutLogs.forEach(log => {
@@ -34,7 +34,6 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ workoutLogs 
       
       const weekKey = weekStart.toISOString().split('T')[0];
       
-      // Calculate total volume (reps) for this workout
       let workoutVolume = 0;
       log.performance.forEach(perf => {
         perf.sets.forEach(set => {
@@ -48,19 +47,18 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ workoutLogs 
       weeklyData[weekKey] += workoutVolume;
     });
 
-    // Convert to array and sort by date (most recent first)
     const weeklyArray = Object.entries(weeklyData)
       .map(([week, volume]) => ({
         week,
         volume,
       }))
       .sort((a, b) => new Date(b.week).getTime() - new Date(a.week).getTime())
-      .slice(0, 12); // Last 12 weeks
+      .slice(0, 12);
 
     const maxVolume = Math.max(...weeklyArray.map(w => w.volume), 1);
 
     return {
-      weeklyVolume: weeklyArray.reverse(), // Reverse to show oldest to newest
+      weeklyVolume: weeklyArray.reverse(),
       maxVolume,
     };
   }, [workoutLogs]);
@@ -71,87 +69,36 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ workoutLogs 
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Weekly Volume</Text>
-      <View style={styles.chartContainer}>
+    <Card className="p-4 mb-4">
+      <Text variant="h3" className="text-lg font-bold mb-4">
+        Weekly Volume
+      </Text>
+      <View className="min-h-[150px]">
         {performanceData.weeklyVolume.length > 0 ? (
-          <View style={styles.barsContainer}>
-            {performanceData.weeklyVolume.map((week, index) => {
+          <div className="flex flex-row items-end justify-around h-[150px]">
+            {performanceData.weeklyVolume.map((week) => {
               const heightPercent = (week.volume / performanceData.maxVolume) * 100;
               return (
-                <View key={week.week} style={styles.barWrapper}>
-                  <View style={styles.barContainer}>
-                    <View
-                      style={[
-                        styles.bar,
-                        { height: `${Math.max(heightPercent, 5)}%` },
-                      ]}
+                <div key={week.week} className="flex-1 flex flex-col items-center justify-end px-0.5">
+                  <div className="w-full h-[120px] flex items-end mb-1">
+                    <div
+                      className="w-full bg-primary rounded min-h-[4px]"
+                      style={{ height: `${Math.max(heightPercent, 5)}%` }}
                     />
-                  </View>
-                  <Text style={styles.barLabel} numberOfLines={1}>
+                  </div>
+                  <Text className="text-xs text-subtle-text text-center">
                     {formatWeekLabel(week.week)}
                   </Text>
-                </View>
+                </div>
               );
             })}
-          </View>
+          </div>
         ) : (
-          <Text style={styles.emptyText}>No performance data yet</Text>
+          <Text className="text-sm text-subtle-text text-center py-10">
+            No performance data yet
+          </Text>
         )}
       </View>
-    </View>
+    </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.text,
-    marginBottom: 16,
-  },
-  chartContainer: {
-    minHeight: 150,
-  },
-  barsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    height: 150,
-  },
-  barWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 2,
-  },
-  barContainer: {
-    width: '100%',
-    height: 120,
-    justifyContent: 'flex-end',
-    marginBottom: 4,
-  },
-  bar: {
-    width: '100%',
-    backgroundColor: THEME.primary,
-    borderRadius: 4,
-    minHeight: 4,
-  },
-  barLabel: {
-    fontSize: 10,
-    color: THEME.subtleText,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: THEME.subtleText,
-    textAlign: 'center',
-    paddingVertical: 40,
-  },
-});

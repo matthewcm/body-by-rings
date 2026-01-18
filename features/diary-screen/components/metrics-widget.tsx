@@ -1,6 +1,7 @@
+'use client';
+
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { THEME } from '@/shared/theme/colours';
+import { View, Text, Card } from '@/lib/ui/components';
 
 interface MetricsWidgetProps {
   workoutLogs: Array<{
@@ -30,26 +31,22 @@ export const MetricsWidget: React.FC<MetricsWidgetProps> = ({ workoutLogs }) => 
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    // Count unique workout dates
     const workoutDates = new Set<string>();
     workoutLogs.forEach(log => {
       const logDate = new Date(log.date);
       workoutDates.add(logDate.toISOString().split('T')[0]);
     });
 
-    // Count workouts this year
     const workoutsThisYear = Array.from(workoutDates).filter(dateStr => {
       const date = new Date(dateStr);
       return date >= startOfYear;
     }).length;
 
-    // Count workouts this week
     const workoutsThisWeek = Array.from(workoutDates).filter(dateStr => {
       const date = new Date(dateStr);
       return date >= startOfWeek;
     }).length;
 
-    // Calculate current streak (consecutive days with workouts)
     let currentStreak = 0;
     
     if (workoutDates.size > 0) {
@@ -60,15 +57,12 @@ export const MetricsWidget: React.FC<MetricsWidgetProps> = ({ workoutLogs }) => 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Check if most recent workout is today or yesterday
       const mostRecent = new Date(sortedDates[0]);
       mostRecent.setHours(0, 0, 0, 0);
       
       const daysDiff = Math.floor((today.getTime() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
       
-      // If last workout was today or yesterday, check for consecutive days
       if (daysDiff <= 1) {
-        // Count consecutive days starting from most recent
         let expectedDate = new Date(mostRecent);
         for (const dateStr of sortedDates) {
           const workoutDate = new Date(dateStr);
@@ -78,7 +72,6 @@ export const MetricsWidget: React.FC<MetricsWidgetProps> = ({ workoutLogs }) => 
             currentStreak++;
             expectedDate.setDate(expectedDate.getDate() - 1);
           } else if (workoutDate < expectedDate) {
-            // Gap found, streak is broken
             break;
           }
         }
@@ -93,57 +86,36 @@ export const MetricsWidget: React.FC<MetricsWidgetProps> = ({ workoutLogs }) => 
   }, [workoutLogs]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Activity Metrics</Text>
-      <View style={styles.metricsRow}>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics.workoutsThisYear}</Text>
-          <Text style={styles.metricLabel}>This Year</Text>
+    <Card className="p-4 mb-4">
+      <Text variant="h3" className="text-lg font-bold mb-3">
+        Activity Metrics
+      </Text>
+      <View className="flex flex-row justify-around">
+        <View className="items-center flex-1">
+          <Text className="text-3xl font-bold text-primary mb-1">
+            {metrics.workoutsThisYear}
+          </Text>
+          <Text className="text-xs text-subtle-text uppercase font-semibold">
+            This Year
+          </Text>
         </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics.workoutsThisWeek}</Text>
-          <Text style={styles.metricLabel}>This Week</Text>
+        <View className="items-center flex-1">
+          <Text className="text-3xl font-bold text-primary mb-1">
+            {metrics.workoutsThisWeek}
+          </Text>
+          <Text className="text-xs text-subtle-text uppercase font-semibold">
+            This Week
+          </Text>
         </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics.currentStreak}</Text>
-          <Text style={styles.metricLabel}>Day Streak</Text>
+        <View className="items-center flex-1">
+          <Text className="text-3xl font-bold text-primary mb-1">
+            {metrics.currentStreak}
+          </Text>
+          <Text className="text-xs text-subtle-text uppercase font-semibold">
+            Day Streak
+          </Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: THEME.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.text,
-    marginBottom: 12,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  metricCard: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: THEME.primary,
-    marginBottom: 4,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: THEME.subtleText,
-    textTransform: 'uppercase',
-    fontWeight: '600',
-  },
-});

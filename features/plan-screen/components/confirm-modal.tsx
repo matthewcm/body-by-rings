@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { Modal, View, Text, Button } from '@/lib/ui/components';
+import { AlertTriangle, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -25,106 +27,40 @@ export const ConfirmModal = ({
   destructive = false,
 }: ConfirmModalProps) => {
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel}>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <FontAwesome5
-              name={destructive ? 'exclamation-triangle' : 'info-circle'}
-              size={24}
-              color={destructive ? THEME.error : THEME.primary}
-            />
-            <Text style={styles.title}>{title}</Text>
-          </View>
-
-          <Text style={styles.message}>{message}</Text>
-
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.confirmButton, destructive && styles.destructiveButton]}
-              onPress={onConfirm}
-            >
-              <Text style={[styles.confirmButtonText, destructive && styles.destructiveButtonText]}>
-                {confirmText}
-              </Text>
-            </TouchableOpacity>
-          </View>
+    <Modal visible={visible} onClose={onCancel}>
+      <div className="p-6">
+        <View className="flex flex-row items-center mb-4 gap-3">
+          {destructive ? (
+            <AlertTriangle className="w-6 h-6 text-error" />
+          ) : (
+            <Info className="w-6 h-6 text-primary" />
+          )}
+          <Text variant="h2" className="text-xl font-bold flex-1">
+            {title}
+          </Text>
         </View>
-      </View>
+
+        <Text className="text-subtle-text text-base leading-6 mb-6">
+          {message}
+        </Text>
+
+        <View className="flex flex-row gap-3">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            {cancelText}
+          </Button>
+          <Button
+            variant={destructive ? 'destructive' : 'primary'}
+            onClick={onConfirm}
+            className="flex-1"
+          >
+            {confirmText}
+          </Button>
+        </View>
+      </div>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modal: {
-    backgroundColor: THEME.card,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: THEME.text,
-    flex: 1,
-  },
-  message: {
-    fontSize: 16,
-    color: THEME.subtleText,
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: THEME.background,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  cancelButtonText: {
-    color: THEME.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: THEME.primary,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  destructiveButton: {
-    backgroundColor: THEME.error,
-  },
-  destructiveButtonText: {
-    color: '#fff',
-  },
-});

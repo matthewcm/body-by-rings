@@ -1,7 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { THEME } from '@/shared/theme/colours';
+import { Modal, View, Text, Input, ScrollView, TouchableOpacity } from '@/lib/ui/components';
+import { Search, X, ChevronRight } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 
 interface Exercise {
@@ -32,142 +33,71 @@ export const ExercisePickerModal = ({ visible, exercises, onClose, onSelect }: E
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Select Exercise</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <FontAwesome5 name="times" size={20} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
+    <Modal visible={visible} onClose={onClose} className="max-h-[80vh]">
+      <div className="flex flex-col max-h-[80vh]">
+        <div className="flex flex-row justify-between items-center p-5 border-b border-border">
+          <Text variant="h2" className="text-xl font-bold">
+            Select Exercise
+          </Text>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-card/50 rounded transition-colors"
+          >
+            <X className="w-5 h-5 text-text" />
+          </button>
+        </div>
 
-          <View style={styles.searchContainer}>
-            <FontAwesome5 name="search" size={16} color={THEME.placeholder} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
+        <div className="p-4 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-placeholder" />
+            <Input
+              type="text"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search exercises..."
-              placeholderTextColor={THEME.placeholder}
+              className="w-full pl-10 pr-10"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                <FontAwesome5 name="times" size={14} color={THEME.placeholder} />
-              </TouchableOpacity>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-card/50 rounded"
+              >
+                <X className="w-3.5 h-3.5 text-placeholder" />
+              </button>
             )}
-          </View>
+          </div>
+        </div>
 
-          <ScrollView style={styles.content}>
+        <ScrollView className="flex-1 overflow-auto">
+          <div className="p-4 space-y-2">
             {filteredExercises.length === 0 ? (
-              <Text style={styles.emptyText}>No exercises found</Text>
+              <Text className="text-subtle-text text-center py-8">
+                No exercises found
+              </Text>
             ) : (
               filteredExercises.map((exercise) => (
-                <TouchableOpacity
+                <button
                   key={exercise._id}
-                  style={styles.exerciseItem}
-                  onPress={() => handleSelect(exercise._id)}
+                  onClick={() => handleSelect(exercise._id)}
+                  className="w-full flex flex-row items-center justify-between p-4 bg-card hover:bg-card/80 rounded-lg transition-colors border border-border"
                 >
-                  <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                  <View className="flex-1">
+                    <Text className="text-base font-semibold text-text mb-1">
+                      {exercise.exerciseName}
+                    </Text>
                     {exercise.muscles && exercise.muscles.length > 0 && (
-                      <Text style={styles.exerciseMuscles}>
+                      <Text className="text-sm text-subtle-text">
                         {exercise.muscles.slice(0, 3).join(', ')}
                       </Text>
                     )}
                   </View>
-                  <FontAwesome5 name="chevron-right" size={14} color={THEME.placeholder} />
-                </TouchableOpacity>
+                  <ChevronRight className="w-4 h-4 text-placeholder ml-2" />
+                </button>
               ))
             )}
-          </ScrollView>
-        </View>
-      </View>
+          </div>
+        </ScrollView>
+      </div>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
-    backgroundColor: THEME.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: THEME.text,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.border,
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: THEME.background,
-    borderRadius: 8,
-    padding: 12,
-    color: THEME.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  clearButton: {
-    marginLeft: 8,
-    padding: 4,
-  },
-  content: {
-    padding: 16,
-  },
-  exerciseItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: THEME.background,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-    marginBottom: 4,
-  },
-  exerciseMuscles: {
-    fontSize: 12,
-    color: THEME.subtleText,
-  },
-  emptyText: {
-    color: THEME.placeholder,
-    fontSize: 14,
-    textAlign: 'center',
-    padding: 20,
-  },
-});
