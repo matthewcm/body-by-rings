@@ -14,7 +14,7 @@ export type PerformanceLog = {
   sets: {
     reps: string;
     intensity: string;
-    completed?: boolean
+    isPB?: boolean; // Personal Best / Best Effort marker
   }[];
   notes?: string;
   lastPerformance?: PerformanceLog;

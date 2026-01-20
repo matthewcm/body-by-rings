@@ -6,7 +6,7 @@ import { WorkoutSummaryModal } from '@/features/workout-screen/components/workou
 import { Button, Text, View } from '@/lib/ui/components';
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { isNotNull } from '@/shared/utils/array';
-import { useAction, useMutation } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { Plus } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
@@ -43,6 +43,7 @@ export default function CustomWorkoutScreen() {
   const createCustomExercise = useMutation(api.workouts.create_custom_workout);
   const exercisesForDay = useMemo(() => templates || [], [templates]);
   const scanImage = useAction(api.ai.scan_workout_image);
+  const workoutLogs = useQuery(api.workouts.get_workout_logs);
 
   const handleScanWOD = async (type: ScanType) => {
     setIsScanning(true);
@@ -276,7 +277,7 @@ export default function CustomWorkoutScreen() {
         ) : (
           exercisesForDay.map(ex => {
             const performanceData = performanceLog[ex._id] || {
-              sets: [{ reps: '', intensity: '', completed: false }],
+              sets: [{ reps: '', intensity: '' }],
               exerciseName: ex.exerciseName || '',
               exerciseId: ex._id
             };
@@ -287,6 +288,7 @@ export default function CustomWorkoutScreen() {
                 performanceData={performanceData}
                 onUpdate={handleUpdateExercise}
                 onDelete={handleDeleteExercise}
+                workoutLogs={workoutLogs}
               />
             );
           })

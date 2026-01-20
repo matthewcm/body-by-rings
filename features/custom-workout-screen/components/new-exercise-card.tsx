@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils';
 import { useCountdown } from '@/shared/hooks/use-countdown';
 import { PerformanceLog } from '@/shared/models/exercise';
 import { useQuery } from 'convex/react';
-import { Check, Clock, Dumbbell, Trash2 } from 'lucide-react';
+import { Clock, Dumbbell, Trash2, Info } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { PreviousPerformanceModal } from '@/features/workout-screen/components/previous-performance-modal';
 
 const normalizeExerciseName = (name: string): string => {
   let normalized = name.toLowerCase().trim();
@@ -25,9 +26,17 @@ interface NewExerciseCardProps {
   onUpdate: (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => void;
   onDelete: (exerciseId: Id<'workoutTemplates'>) => void;
   performanceData: PerformanceLog;
+  workoutLogs?: Array<{
+    date: string;
+    performance: Array<{
+      exerciseName: string;
+      sets: Array<{ reps: string; intensity: string }>;
+      notes?: string;
+    }>;
+  }>;
 }
 
-export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete }: NewExerciseCardProps) => {
+export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete, workoutLogs }: NewExerciseCardProps) => {
   const setsToRender = performanceData?.sets || [];
   const lastPerformance = performanceData?.lastPerformance;
   const { start: startRest, isActive: isResting, formattedTime: restTime } = useCountdown(90, () => { });
@@ -35,8 +44,20 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
   const customExercises = useQuery(api.workouts.get_all_custom_workout_templates);
   const [exerciseNameInput, setExerciseNameInput] = useState(performanceData?.exerciseName || exercise.exerciseName);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showPreviousModal, setShowPreviousModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if exercise has previous history
+  const hasHistory = useMemo(() => {
+    if (!workoutLogs || !exerciseNameInput) return false;
+    const normalizedName = normalizeExerciseName(exerciseNameInput);
+    return workoutLogs.some(log =>
+      log.performance.some(p =>
+        normalizeExerciseName(p.exerciseName) === normalizedName && p.sets.length > 0
+      )
+    );
+  }, [workoutLogs, exerciseNameInput]);
 
   const uniqueCustomExerciseNames = useMemo(() => {
     if (!customExercises) return [];
@@ -107,10 +128,9 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
     });
   };
 
-  const toggleSetComplete = (setIndex: number) => {
+  const togglePB = (setIndex: number) => {
     const newSets = JSON.parse(JSON.stringify(setsToRender));
-    newSets[setIndex].completed = !newSets[setIndex].completed;
-    if (newSets[setIndex].completed) startRest();
+    newSets[setIndex].isPB = !newSets[setIndex].isPB;
     onUpdate(exercise._id, { ...performanceData, sets: newSets });
   };
 
@@ -121,8 +141,8 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
   const addSet = () => {
     const lastSet = setsToRender[setsToRender.length - 1];
     const newSet = lastSet 
-      ? { reps: lastSet.reps, intensity: lastSet.intensity, completed: false } 
-      : { reps: '', intensity: '', completed: false };
+      ? { reps: lastSet.reps, intensity: lastSet.intensity } 
+      : { reps: '', intensity: '' };
     onUpdate(exercise._id, { ...performanceData, sets: [...setsToRender, newSet] });
   };
 
@@ -146,6 +166,7 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
   }, [lastPerformance]);
 
   return (
+    <>
     <Card className="p-4 mb-0">
       <View className="flex flex-row items-start mb-2 gap-3 relative z-10">
         <Dumbbell className="w-4.5 h-4.5 text-primary flex-shrink-0 mt-2" />
@@ -177,6 +198,15 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
             </div>
           )}
         </div>
+        {hasHistory && (
+          <button
+            onClick={() => setShowPreviousModal(true)}
+            className="w-8 h-8 flex items-center justify-center hover:bg-primary/20 rounded-lg transition-colors"
+            title="View previous performance"
+          >
+            <Info className="w-4 h-4 text-primary" />
+          </button>
+        )}
         <button
           onClick={() => onDelete(exercise._id)}
           className="w-10 h-10 flex items-center justify-center hover:bg-error/10 rounded transition-colors"
@@ -208,6 +238,7 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
         <Text className="text-placeholder text-xs font-semibold flex-[1.5]">SET</Text>
         <Text className="text-placeholder text-xs font-semibold flex-[1.5]">INTENSITY</Text>
         <Text className="text-placeholder text-xs font-semibold flex-[1.5]">REPS</Text>
+        <Text className="text-placeholder text-xs font-semibold w-[60px] text-center">PB</Text>
         <div className="w-[50px]" />
       </View>
 
@@ -217,10 +248,10 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
             key={index}
             className={cn(
               'flex flex-row items-center py-1 border-b border-border gap-1',
-              set.completed && 'bg-success/10 border-success/40 border rounded-lg -mx-4 px-4'
+              set.isPB && 'bg-primary/10 border-primary/40'
             )}
           >
-            <Text className={cn('text-base flex-[0.5] text-center', set.completed && 'text-success')}>
+            <Text className="text-base flex-[0.5] text-center">
               {index + 1}
             </Text>
             <Input
@@ -236,13 +267,14 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
               className="flex-1 text-center"
             />
             <button
-              onClick={() => toggleSetComplete(index)}
+              onClick={() => togglePB(index)}
               className={cn(
-                'w-10 h-10 flex items-center justify-center rounded-lg transition-colors',
-                set.completed ? 'bg-success' : 'hover:bg-card/50'
+                'w-10 h-10 flex items-center justify-center rounded-lg transition-colors text-xs font-bold',
+                set.isPB ? 'bg-primary text-white' : 'hover:bg-card/50 text-subtle-text'
               )}
+              title="Mark as Personal Best"
             >
-              <Check className={cn('w-4 h-4', set.completed ? 'text-white' : 'text-subtle-text')} />
+              {set.isPB ? 'PB' : 'PB'}
             </button>
             {setsToRender.length > 1 && (
               <button
@@ -271,5 +303,13 @@ export const NewExerciseCard = ({ exercise, onUpdate, performanceData, onDelete 
         className="mt-4"
       />
     </Card>
+
+    <PreviousPerformanceModal
+      isVisible={showPreviousModal}
+      onClose={() => setShowPreviousModal(false)}
+      exerciseName={exerciseNameInput}
+      workoutLogs={workoutLogs}
+    />
+    </>
   );
 };

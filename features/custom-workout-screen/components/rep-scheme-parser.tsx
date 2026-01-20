@@ -67,13 +67,12 @@ export const createSetsFromRepScheme = (repScheme: string | null | undefined) =>
   
   if (reps.length === 0) {
     // If no rep scheme or unable to parse, return a single empty set
-    return [{ reps: '', intensity: '', completed: false }];
+    return [{ reps: '', intensity: '' }];
   }
 
   // Create sets with reps pre-filled
   return reps.map(rep => ({
     reps: rep.toString(),
     intensity: '',
-    completed: false,
   }));
 };

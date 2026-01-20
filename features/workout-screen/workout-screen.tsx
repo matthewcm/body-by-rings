@@ -24,6 +24,7 @@ export default function WorkoutScreen() {
 
   const templates = useQuery(api.workouts.get_all_workout_templates);
   const lastWorkout = useQuery(api.workouts.get_last_workout_log, { phase: parseInt(phase), day: parseInt(day) });
+  const workoutLogs = useQuery(api.workouts.get_workout_logs);
   const logWorkout = useMutation(api.workouts.log_workout);
 
   const exercisesForDay = useMemo(() => {
@@ -39,8 +40,8 @@ export default function WorkoutScreen() {
         const lastPerf = lastWorkout?.performance.find(p => p.exerciseName === exerciseName);
         initialLog[ex._id] = {
           exerciseName: exerciseName,
-          sets: lastPerf?.sets.map(s => ({ ...s, completed: false })) || 
-            Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '', completed: false })),
+          sets: lastPerf?.sets.map(s => ({ ...s })) || 
+            Array.from({ length: ex.targetSets }, () => ({ reps: '', intensity: '' })),
           notes: '',
           exerciseId: ex._id,
           lastPerformance: lastPerf ? {...lastPerf, exerciseId: ex._id} : undefined,
@@ -141,7 +142,7 @@ export default function WorkoutScreen() {
             const exerciseName = ex.exercise?.exerciseName || ex.exerciseName || '';
             const performanceData = performanceLog[ex._id] || {
               exerciseName: exerciseName,
-              sets: Array.from({ length: ex.targetSets || 3 }, () => ({ reps: '', intensity: '', completed: false })),
+              sets: Array.from({ length: ex.targetSets || 3 }, () => ({ reps: '', intensity: '' })),
               notes: '',
               exerciseId: ex._id,
               lastPerformance: lastWorkout?.performance.find(p => p.exerciseName === exerciseName) 
@@ -154,6 +155,7 @@ export default function WorkoutScreen() {
                 exercise={{ ...ex, exerciseName }}
                 performanceData={performanceData}
                 onUpdate={handleUpdateExercise}
+                workoutLogs={workoutLogs}
               />
             );
           })
