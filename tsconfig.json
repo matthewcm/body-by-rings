@@ -37,7 +37,6 @@
   "exclude": [
     "node_modules",
     "app-old/**",
-    "scripts/**",
     "shared/components/external-link.tsx",
     "shared/components/haptic-tab.tsx",
     "shared/components/hello-wave.tsx",

@@ -1,9 +1,9 @@
 'use client';
 
 import { api } from '@/convex/_generated/api';
-import { useQuery } from 'convex/react';
-import React, { useMemo, useState } from 'react';
 import { Text, View } from '@/lib/ui/components';
+import { useQuery } from 'convex/react';
+import { useMemo, useState } from 'react';
 import { ActivityModal } from './components/activity-modal';
 import { CalendarWidget } from './components/calendar-widget';
 import { DiaryActivities } from './components/diary-table';

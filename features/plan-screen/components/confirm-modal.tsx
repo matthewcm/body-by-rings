@@ -1,9 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Modal, View, Text, Button } from '@/lib/ui/components';
+import { Button, Modal, Text, View } from '@/lib/ui/components';
 import { AlertTriangle, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ConfirmModalProps {
   visible: boolean;

@@ -4,12 +4,12 @@ import { api } from '@/convex/_generated/api';
 import { ProgressionTable } from '@/features/stats-screen/components/progression-table/progression-table';
 import { ActivityIndicator, Button, Card, Input, Modal, Text, View } from '@/lib/ui/components';
 import { cn } from '@/lib/utils';
-import { THEME } from '@/shared/theme/colours';
-import { generateHexShades } from '@/shared/utils/colors';
+import { muscleGroups } from '@/shared/components/muscle-map/consts/muscle-groups';
+import { MuscleMap } from '@/shared/components/muscle-map/muscle-map';
 import { useMutation, useQuery } from 'convex/react';
 import { Edit, Save, Search, Star, X, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Body, { type Muscle } from 'react-body-highlighter';
+import { type Muscle } from 'react-body-highlighter';
 
 // Normalize exercise name: lowercase and remove pluralization
 const normalizeExerciseName = (name: string): string => {
@@ -26,6 +26,7 @@ export default function StatsScreen() {
   const logs = useQuery(api.workouts.get_workout_logs);
   const templates = useQuery(api.workouts.get_all_workout_templates);
   const customTemplates = useQuery(api.workouts.get_all_custom_workout_templates);
+
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState('');
@@ -35,30 +36,21 @@ export default function StatsScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const exerciseListRef = useRef<HTMLDivElement>(null);
-  
+
   const updateExerciseName = useMutation(api.workouts.update_custom_exercise_name);
   const updateExerciseMuscles = useMutation(api.workouts.update_custom_exercise_muscles);
 
-  console.log(selectedMuscles)
-  
-  // Organize muscles by body region
-  const muscleGroups = useMemo(() => {
-    return {
-      'Upper Body': ['chest', 'front-deltoids', 'back-deltoids', 'triceps', 'biceps', 'upper-back', 'trapezius', 'forearm', ],
-      'Core': ['abs', 'obliques', 'lower-back'],
-      'Lower Body': ['quadriceps', 'hamstring', 'calves', 'gluteal', 'adductors', 'tibialis'],
-      'Other': ['neck', 'head', 'ankles', 'knees'],
-    };
-  }, []);
-  
+  const exerciseByName = useQuery(api.workouts.get_exercise_by_name, { exerciseName: selectedExercise });
+
+
   // Get the current custom exercise data when selected
   const currentCustomExercise = useMemo(() => {
     if (!customTemplates || !selectedExercise) return null;
-    const template = customTemplates.find(ex => 
+    const template = customTemplates.find(ex =>
       ex.exercise?.exerciseName === selectedExercise || ex.exerciseName === selectedExercise
     );
     if (!template) return null;
-    
+
     return {
       ...template,
       muscles: template.exercise?.muscles || [],
@@ -80,7 +72,7 @@ export default function StatsScreen() {
 
   const uniqueCustomExercises = useMemo(() => {
     if (!customTemplates) return [];
-    
+
     const normalizedMap = new Map<string, string>();
     customTemplates.forEach(t => {
       const exerciseName = t.exercise?.exerciseName || t.exerciseName;
@@ -112,7 +104,7 @@ export default function StatsScreen() {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(ex => 
+      filtered = filtered.filter(ex =>
         ex.name.toLowerCase().includes(query)
       );
     }
@@ -123,7 +115,7 @@ export default function StatsScreen() {
   // Group exercises by first letter
   const exercisesByLetter = useMemo(() => {
     const grouped: Record<string, ExerciseItem[]> = {};
-    
+
     filteredExercises.forEach(ex => {
       const firstLetter = ex.name.charAt(0).toUpperCase();
       if (!grouped[firstLetter]) {
@@ -164,13 +156,14 @@ export default function StatsScreen() {
     } else {
       setIsEditing(false);
       setEditingName('');
-      setSelectedMuscles([]);
+      console.log(exerciseByName, 'exerciseByName');
+      setSelectedMuscles(exerciseByName?.muscles?.map(m => m as Muscle) || []);
     }
   }, [currentCustomExercise]);
 
   const handleSaveExercise = async () => {
     if (!selectedExercise) return;
-    
+
     try {
       if (editingName !== selectedExercise) {
         await updateExerciseName({ oldName: selectedExercise, newName: editingName });
@@ -209,7 +202,7 @@ export default function StatsScreen() {
     const normalizedSelectedExercise = normalizeExerciseName(selectedExercise);
     return logs
       .map(log => {
-        const performance = log.performance.find(p => 
+        const performance = log.performance.find(p =>
           normalizeExerciseName(p.exerciseName) === normalizedSelectedExercise
         );
         if (!performance || performance.sets.length === 0) return null;
@@ -484,37 +477,14 @@ export default function StatsScreen() {
                   </div>
                 )}
 
-                {!isEditing && selectedMuscles.length > 0 && (
-                  <div className="mb-5 flex flex-col sm:flex-row justify-around items-center gap-4 sm:gap-0 py-5 px-5 w-full">
-                    <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
-                      <Body
-
-                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles }]}
-                        type="anterior"
-                        bodyColor="#dfdfdf"
-                        highlightedColors={generateHexShades(THEME.primary, 6, 20)}
-                        style={{ maxWidth: '200px', width: '100%' }}
-                        svgStyle={{ width: '100%', height: 'auto' }}
-                      />
-                    </div>
-                    <div className="flex-1 flex items-center justify-center w-full sm:w-auto">
-                      <Body
-                        data={[{ name: selectedExercise || 'Exercise', muscles: selectedMuscles }]}
-                        type="posterior"
-                        bodyColor="#dfdfdf"
-                        highlightedColors={generateHexShades(THEME.primary, 6, 20)}
-                        style={{ maxWidth: '200px', width: '100%' }}
-                        svgStyle={{ width: '100%', height: 'auto' }}
-                      />
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <Text variant="h3" className="text-lg font-bold mb-4">
                 {selectedExercise}
               </Text>
             )}
+
+            <MuscleMap performedExercises={[selectedExercise]} />
             <ProgressionTable data={tableData} />
           </Card>
         )}

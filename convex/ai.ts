@@ -1,6 +1,6 @@
-import { action } from "./_generated/server";
-import { v } from "convex/values";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v } from "convex/values";
+import { action } from "./_generated/server";
 
 export const scan_workout_image = action({
   args: { base64Image: v.string() },
