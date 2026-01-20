@@ -3,18 +3,18 @@
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { WorkoutSummaryModal } from '@/features/workout-screen/components/workout-summary-modal';
-import { ActivityIndicator, Button, Text, View } from '@/lib/ui/components';
+import { Button, Text, View } from '@/lib/ui/components';
 import { PerformanceLog, PerformanceLogs } from '@/shared/models/exercise';
 import { isNotNull } from '@/shared/utils/array';
 import { useAction, useMutation } from 'convex/react';
-import { Camera, Image, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
 import { NewExerciseCard } from './components/new-exercise-card';
-
-type SCAN_TYPE = 'gallery' | 'camera';
+import { ScanType, handleGetWodImage } from './components/wod-image-handler';
+import { WodScannerButtons } from './components/wod-scanner-buttons';
 
 export default function CustomWorkoutScreen() {
   const history = useHistory();
@@ -24,55 +24,57 @@ export default function CustomWorkoutScreen() {
   const [performanceLog, setPerformanceLog] = useState<PerformanceLogs>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanningType, setScanningType] = useState<ScanType | null>(null);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<{ name?: string; summary?: string }[]>([]);
   const [templates, setTemplates] = useState<{ _id: Id<'workoutTemplates'>; exerciseName: string }[]>([]);
   const [wodBlocks, setWodBlocks] = useState<any[]>([]);
+  
+  // Ref to track if scan should be cancelled
+  const scanCancelledRef = useRef(false);
 
   const logWorkout = useMutation(api.workouts.log_workout);
   const createCustomExercise = useMutation(api.workouts.create_custom_workout);
   const exercisesForDay = useMemo(() => templates || [], [templates]);
   const scanImage = useAction(api.ai.scan_workout_image);
 
-  const handleGetWodImage = async (type: SCAN_TYPE): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      if (type === 'camera') {
-        input.capture = 'environment';
+  const handleScanWOD = async (type: ScanType) => {
+    setIsScanning(true);
+    setScanningType(type);
+    scanCancelledRef.current = false;
+    
+    try {
+      const result = await handleGetWodImage(type);
+      
+      // Check if cancelled
+      if (result.cancelled || scanCancelledRef.current) {
+        setIsScanning(false);
+        setScanningType(null);
+        return;
       }
       
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          resolve(null);
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(',')[1]; // Remove data:image/...;base64, prefix
-          resolve(base64Data);
-        };
-        reader.readAsDataURL(file);
-      };
-      
-      input.click();
-    });
-  };
-
-  const handleScanWOD = async (type: SCAN_TYPE) => {
-    setIsScanning(true);
-    try {
-      const base64Image = await handleGetWodImage(type);
-      if (!base64Image) {
+      if (!result.base64Image) {
         setIsScanning(false);
+        setScanningType(null);
         return;
       }
 
-      const parsedData = await scanImage({ base64Image });
+      // Check again before making API call
+      if (scanCancelledRef.current) {
+        setIsScanning(false);
+        setScanningType(null);
+        return;
+      }
+
+      const parsedData = await scanImage({ base64Image: result.base64Image });
+      
+      // Final check before updating state
+      if (scanCancelledRef.current) {
+        setIsScanning(false);
+        setScanningType(null);
+        return;
+      }
+
       setWodBlocks(parsedData);
 
       const allExercises: any[] = [];
@@ -88,11 +90,21 @@ export default function CustomWorkoutScreen() {
 
       setTemplates(prev => [...prev, ...allExercises]);
     } catch (error) {
-      console.error(error);
-      alert('AI could not structure the CrossFit workout.');
+      if (!scanCancelledRef.current) {
+        console.error(error);
+        alert('AI could not structure the CrossFit workout.');
+      }
     } finally {
       setIsScanning(false);
+      setScanningType(null);
+      scanCancelledRef.current = false;
     }
+  };
+
+  const handleCancelScan = () => {
+    scanCancelledRef.current = true;
+    setIsScanning(false);
+    setScanningType(null);
   };
 
   const handleUpdateExercise = (exerciseId: Id<'workoutTemplates'>, data: PerformanceLog) => {
@@ -204,38 +216,12 @@ export default function CustomWorkoutScreen() {
       />
 
       <View className="px-0 pb-5">
-        <div className="flex flex-row gap-2 mb-5 border-b border-border pb-5 flex-wrap w-full ">
-          <Button
-            variant="secondary"
-            onClick={() => handleScanWOD('camera')}
-            disabled={isScanning}
-            className="flex-1 flex flex-row items-center justify-center gap-2 w-fit"
-          >
-            {isScanning ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <>
-                <Camera className="w-4 h-4" />
-                <Text className="font-bold text-nowrap">Scan WOD Board</Text>
-              </>
-            )}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => handleScanWOD('gallery')}
-            disabled={isScanning}
-            className="flex-1 flex flex-row items-center justify-center gap-2 w-fit"
-          >
-            {isScanning ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <>
-                <Image className="w-4 h-4" />
-                <Text className="font-bold text-nowrap">WOD from gallery</Text>
-              </>
-            )}
-          </Button>
-        </div>
+        <WodScannerButtons
+          onScan={handleScanWOD}
+          onCancel={handleCancelScan}
+          isScanning={isScanning}
+          scanningType={scanningType}
+        />
 
         <div className="flex flex-col gap-2">
 
