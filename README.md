@@ -6,6 +6,20 @@
 
 ---
 
+## 🆕 What's New
+
+### Latest Features
+
+- **🎯 Previous Performance Tracking**: Quick access to exercise history with info icon - view 1RM, best efforts, and performance trends
+- **🏆 Personal Best Marking**: Mark sets as PB during workouts to track achievements
+- **📊 1RM Calculator**: Automatic one-rep max estimation using the Epley formula
+- **🤖 Enhanced WOD Scanner**: Improved UI with individual loading states, cancel functionality, and auto-fill from rep schemes
+- **⚡ Smart Rep Scheme Parsing**: Automatically creates sets from scanned WOD rep schemes (21-15-9, 5x5, etc.)
+- **🗺️ Universal Muscle Mapping**: Muscle visualization now works for all exercises with intelligent name matching
+- **✨ Desktop Experience**: Mobile first but scaled also for Desktop
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -72,24 +86,33 @@ The application helps users:
 - Program creation and customization
 - Active program tracking
 
-#### **Workout Execution**
+#### **Workout Execution** ⭐ *Enhanced*
 - Real-time workout logging with sets, reps, and intensity tracking
 - Pre-filled templates based on previous performance
+- **Previous Performance Tracking**: Quick access to exercise history via info icon
+- **Personal Best Marking**: Mark sets as PB (Personal Best) for tracking achievements
+- **1RM Calculations**: Automatic estimation of one-rep max from your sets
 - Exercise notes and modifications
 - Workout summary with performance overview
 
-#### **Custom Workouts**
+#### **Custom Workouts** ⭐ *Enhanced*
 - Create ad-hoc workouts outside of structured programs
+- **WOD Scanner Integration**: Scan and auto-populate workouts from WOD boards
+- **Auto-Fill from Scans**: Rep schemes automatically create sets (e.g., "21-15-9" → 3 sets)
 - Add custom exercises to your catalog
 - Flexible workout structure
+- Previous performance tracking and PB marking available
 
 ### 🤖 AI-Powered Features
 
-#### **WOD Board Scanner**
+#### **WOD Board Scanner** ⭐ *Enhanced*
 - **Camera Integration**: Scan CrossFit-style WOD boards directly from your device
 - **Gallery Upload**: Process saved images of workout boards
 - **AI Analysis**: Automatically extracts exercises, rep schemes, and time caps
 - **Smart Parsing**: Distinguishes between strength movements and WODs/Metcons
+- **Intelligent Auto-Fill**: Automatically populates sets and reps from scanned rep schemes (e.g., "21-15-9" creates 3 sets with those reps)
+- **Enhanced UX**: Individual button loading states, cancel functionality, and seamless scanning experience
+- **Rep Scheme Recognition**: Supports multiple formats (21-15-9, 5x5, single numbers, rounds)
 - Powered by Google Gemini AI
 
 ### 📊 Progress Tracking
@@ -100,23 +123,51 @@ The application helps users:
 - Performance metrics and trends
 - Muscle usage visualization
 
-#### **Statistics & Analytics**
+#### **Statistics & Analytics** ⭐ *Enhanced*
 - Progression tables for exercises
 - Performance charts over time
 - Muscle group engagement analysis
 - Historical workout data
+- **Previous Performance Modal**: Detailed view of exercise history including:
+  - Estimated 1RM (One Rep Max) calculations
+  - Best efforts (reps, intensity, volume)
+  - Most recent performance summary
+  - Historical workout timeline
 
-### 🗺️ Muscle Mapping
+### 🗺️ Muscle Mapping ⭐ *Enhanced*
 
 - **Interactive Skeleton Visualization**: See which muscle groups are targeted by each exercise
+- **Universal Support**: Works for both custom and standard exercises with intelligent name matching
+- **Smart Matching**: Handles exercise name variations (case differences, plurals) automatically
 - **Workout Summary Integration**: Visual representation of muscle engagement in completed workouts
 - **Exercise Catalog**: Comprehensive database with muscle group associations
+- **Front & Back Views**: Dual visualization showing anterior and posterior muscle engagement
 
 ### 📱 Cross-Platform Support
 
 - **Web Application**: Full-featured web experience
 - **Mobile Apps**: Native iOS and Android apps via Capacitor
 - **Responsive Design**: Optimized for all screen sizes
+- **Seamless UX**: Custom scrollbar styling for desktop with thin, unobtrusive scrollbars
+
+### 🎯 Performance Tracking Features ⭐ *New*
+
+#### **Previous Performance Insights**
+- **Info Icon Indicator**: Visual indicator (ℹ️) appears next to exercises with previous records
+- **Quick Access Modal**: Tap the info icon to view comprehensive performance history
+- **Best Efforts Display**: See your best 1RM, max reps, best intensity, and best volume
+- **Historical Timeline**: Review your last 5 workouts for each exercise
+- **Smart Exercise Matching**: Handles exercise name variations automatically
+
+#### **Personal Best Tracking**
+- **PB Marking**: Mark any set as a Personal Best during workout entry
+- **Visual Highlighting**: PB sets are highlighted with primary color for easy identification
+- **Achievement Tracking**: Track your progress and celebrate new personal records
+
+#### **1RM Calculator**
+- **Automatic Calculation**: Estimates one-rep max using the Epley formula
+- **Best 1RM Tracking**: Tracks your best estimated 1RM across all workouts
+- **Formula**: `weight × (1 + reps / 30)` for accurate strength estimation
 
 ---
 
@@ -133,7 +184,14 @@ body-by-rings/
 ├── features/              # Feature-based screen modules
 │   ├── dashboard-screen/  # Main dashboard with phase selection
 │   ├── workout-screen/    # Workout execution interface
+│   │   └── components/
+│   │       ├── previous-performance-modal.tsx  # Performance history modal
+│   │       └── exercise-card.tsx  # Exercise card with PB marking
 │   ├── custom-workout-screen/  # Custom workout creation
+│   │   └── components/
+│   │       ├── wod-scanner-buttons.tsx  # Enhanced scanner UI
+│   │       ├── wod-image-handler.tsx  # Image selection utility
+│   │       └── rep-scheme-parser.tsx  # Rep scheme parsing
 │   ├── diary-screen/      # Workout diary and calendar
 │   ├── stats-screen/      # Progress statistics
 │   ├── plan-screen/       # Program management
@@ -155,6 +213,7 @@ body-by-rings/
 │   │   └── wod-scanner/   # WOD scanner UI
 │   ├── models/            # Data models
 │   └── utils/             # Utility functions
+│       └── one-rm-calculator.ts  # 1RM calculation utilities
 └── scripts/               # Development and migration scripts
 ```
 
@@ -230,33 +289,29 @@ npm run android  # Opens Android Studio
 
 ### Immediate Priorities
 
-1. **Complete Feature Migration**
-   - [ ] Finalize remaining screen migrations from Expo
-   - [ ] Ensure all React Native components are converted
-   - [ ] Complete shared component updates
-
-2. **Mobile Optimization**
+1. **Mobile Optimization**
    - [ ] Test and optimize camera functionality on iOS/Android
    - [ ] Implement platform-specific features (haptics, native modules)
    - [ ] Optimize performance for mobile devices
 
-3. **Testing & Quality Assurance**
+2. **Testing & Quality Assurance**
    - [ ] Comprehensive testing of all features on web
    - [ ] Mobile device testing (iOS and Android)
    - [ ] Cross-browser compatibility verification
 
-4. **Enhancements**
+3. **Enhancements**
    - [ ] Improve AI scanning accuracy and error handling
    - [ ] Add more exercise templates to catalog
    - [ ] Enhance statistics and analytics features
    - [ ] Implement workout sharing capabilities
+   - [ ] Add PB notifications/celebrations
 
-5. **Documentation**
+4. **Documentation**
    - [ ] User guide and tutorials
    - [ ] API documentation
    - [ ] Deployment guides
 
-6. **Production Readiness**
+5. **Production Readiness**
    - [ ] Performance optimization
    - [ ] Security audit
    - [ ] Error tracking and monitoring
@@ -280,7 +335,8 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## 📄 License
 
-This project is private and proprietary.
+This project is a public dev showcase.
+May make private if gaining users & increased running costs.
 
 ---
 
