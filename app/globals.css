@@ -66,6 +66,13 @@
 body {
   color: var(--text);
   background: var(--background);
+  overflow: hidden;
+  height: 100vh;
+}
+
+html {
+  overflow: hidden;
+  height: 100%;
 }
 
 /* Mobile-first container constraints */
@@ -115,9 +122,6 @@ ion-page {
 ion-page ion-content {
   flex: 1;
   height: 100vh;
-  --overflow: visible !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -130,23 +134,18 @@ ion-page ion-content {
 
 /* Prevent wide content from breaking layout - mobile-first */
 ion-content {
-  --overflow: visible !important;
   width: 100%;
   max-width: 100vw;
   margin: 0 auto;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure content inside IonContent is properly constrained and scrollable */
+/* Ionic handles scrolling internally, so we just ensure proper sizing */
 ion-content .inner-scroll,
 ion-content .scroll-content {
   width: 100%;
   max-width: 100%;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
   min-height: 100%;
   padding-bottom: 2rem;
 }
@@ -204,4 +203,67 @@ img, svg, video, canvas, audio, iframe, embed, object {
 .clerk-card-box {
   max-width: 100%;
   margin: 0 auto;
+}
+
+/* Custom Scrollbar Styling - Seamless on Desktop */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 123, 168, 0.3);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 123, 168, 0.3) transparent;
+}
+
+/* Even thinner scrollbars on desktop */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(139, 123, 168, 0.2);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 58, 237, 0.4);
+  }
+  
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 123, 168, 0.2) transparent;
+  }
+  
+  /* Smooth scrolling for better UX */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Utility class to completely hide scrollbars while maintaining scroll */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }
