@@ -13,6 +13,7 @@ import { useHistory } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { WodCard } from '../workout-screen/components/wod-card';
 import { NewExerciseCard } from './components/new-exercise-card';
+import { createSetsFromRepScheme } from './components/rep-scheme-parser';
 import { ScanType, handleGetWodImage } from './components/wod-image-handler';
 import { WodScannerButtons } from './components/wod-scanner-buttons';
 
@@ -27,7 +28,12 @@ export default function CustomWorkoutScreen() {
   const [scanningType, setScanningType] = useState<ScanType | null>(null);
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<{ name?: string; summary?: string }[]>([]);
-  const [templates, setTemplates] = useState<{ _id: Id<'workoutTemplates'>; exerciseName: string }[]>([]);
+  const [templates, setTemplates] = useState<{ 
+    _id: Id<'workoutTemplates'>; 
+    exerciseName: string;
+    repScheme?: string | null;
+    parentWod?: string;
+  }[]>([]);
   const [wodBlocks, setWodBlocks] = useState<any[]>([]);
   
   // Ref to track if scan should be cancelled
@@ -77,18 +83,40 @@ export default function CustomWorkoutScreen() {
 
       setWodBlocks(parsedData);
 
-      const allExercises: any[] = [];
+      const allExercises: { 
+        _id: Id<'workoutTemplates'>; 
+        exerciseName: string; 
+        repScheme?: string | null;
+        parentWod?: string;
+      }[] = [];
+      const newPerformanceLogs: PerformanceLogs = {};
+      
       parsedData.forEach((block: any) => {
         block.exercises.forEach((name: string) => {
+          const exerciseId = `ex-${uuidv4()}` as Id<'workoutTemplates'>;
+          const repScheme = block.repScheme || null;
+          
           allExercises.push({
-            _id: `ex-${uuidv4()}` as Id<'workoutTemplates'>,
+            _id: exerciseId,
             exerciseName: name,
+            repScheme: repScheme,
             parentWod: block.title,
           });
+
+          // Auto-fill performance log with sets from rep scheme if available
+          const initialSets = createSetsFromRepScheme(repScheme);
+          newPerformanceLogs[exerciseId] = {
+            exerciseId: exerciseId,
+            exerciseName: name,
+            sets: initialSets,
+            notes: '',
+          };
         });
       });
 
       setTemplates(prev => [...prev, ...allExercises]);
+      // Auto-populate performance logs with rep scheme data
+      setPerformanceLog(prev => ({ ...prev, ...newPerformanceLogs }));
     } catch (error) {
       if (!scanCancelledRef.current) {
         console.error(error);
