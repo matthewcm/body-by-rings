@@ -6,7 +6,7 @@ import { THEME } from '@/shared/theme/colours';
 import { generateHexShades } from '@/shared/utils/colors';
 import { useQuery } from 'convex/react';
 import { useMemo } from 'react';
-import Body from 'react-body-highlighter';
+import Body, { Muscle } from 'react-body-highlighter';
 
 interface MuscleMapProps {
   performedExercises: string[];
@@ -77,7 +77,7 @@ export const MuscleMap = ({ performedExercises }: MuscleMapProps) => {
 
       return {
         name: performedExercise,
-        muscles: muscles as any, // Cast to Muscle type since react-body-highlighter uses specific union type
+        muscles: muscles as  Muscle[], // Cast to Muscle type since react-body-highlighter uses specific union type
       };
     }).filter(ex => ex.muscles.length > 0);
   }, [performedExercises, exerciseMuscleMappings]);

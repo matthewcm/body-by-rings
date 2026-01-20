@@ -156,7 +156,6 @@ export default function StatsScreen() {
     } else {
       setIsEditing(false);
       setEditingName('');
-      console.log(exerciseByName, 'exerciseByName');
       setSelectedMuscles(exerciseByName?.muscles?.map(m => m as Muscle) || []);
     }
   }, [currentCustomExercise]);

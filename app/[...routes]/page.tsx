@@ -19,6 +19,7 @@ export function generateStaticParams() {
     { routes: ['profile'] },
     { routes: ['custom-workout'] },
     // Common workout routes
+    // TODO: Need to figure out how to generate static params for the workout routes
     { routes: ['workout', '1', '1'] },
     { routes: ['workout', '1', '2'] },
     { routes: ['workout', '1', '3'] },
