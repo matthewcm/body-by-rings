@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
-import { Modal, View, Text, Input, Textarea, Button } from '@/lib/ui/components';
+import { Button, Input, Modal, Text, Textarea } from '@/lib/ui/components';
 import { X } from 'lucide-react';
+import { FormEvent, useState } from 'react';
 
 interface CreateProgramModalProps {
   visible: boolean;
@@ -121,7 +121,7 @@ export const CreateProgramModal = ({ visible, onClose, onCreate }: CreateProgram
             type="button"
             variant="secondary"
             onClick={onClose}
-            className="flex-1"
+            className="flex-1 text-xs"
           >
             Cancel
           </Button>
@@ -130,7 +130,7 @@ export const CreateProgramModal = ({ visible, onClose, onCreate }: CreateProgram
             variant="primary"
             onClick={handleCreate}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 text-xs"
           >
             {loading ? 'Creating...' : 'Create Program'}
           </Button>

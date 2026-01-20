@@ -87,17 +87,17 @@ export default function PlanScreen() {
                 onClick={() => setShowEditModal(true)}
                 className="flex-1 flex flex-row items-center justify-center gap-2 border border-primary"
               >
-                <Edit className="w-4 h-4 text-background" />
-                <Text className="text-background font-semibold text-sm">Edit Program</Text>
+                <Edit className="w-4 h-4 text-text" />
+                <Text className="text-text font-semibold text-sm">Edit Program</Text>
               </Button>
               
               <Button
-                variant="secondary"
+                variant="destructive"
                 onClick={() => setShowDisableConfirm(true)}
                 className="flex-1 flex flex-row items-center justify-center gap-2 border border-error"
               >
-                <X className="w-4 h-4 text-error" />
-                <Text className="text-error font-semibold text-sm">Disable Program</Text>
+                <X className="w-4 h-4 text-text" />
+                <Text className="text-text font-semibold text-sm">Disable</Text>
               </Button>
             </View>
           </>

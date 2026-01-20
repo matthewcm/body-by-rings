@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, View, ScrollView, Text, Button, ActivityIndicator } from '@/lib/ui/components';
+import { ActivityIndicator, Button, Modal, ScrollView, Text, View } from '@/lib/ui/components';
 import { MuscleMap } from '@/shared/components/muscle-map/muscle-map';
 
 interface WorkoutSummaryModalProps {
@@ -68,7 +68,7 @@ export const WorkoutSummaryModal = ({
             {isSaving ? (
               <ActivityIndicator size="small" />
             ) : (
-              'Confirm & Save'
+              'Save'
             )}
           </Button>
         </View>
